@@ -1,0 +1,1 @@
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS total_label_override TEXT CHECK (total_label_override IN ('due','paid'));

@@ -1,0 +1,1 @@
+ALTER TABLE public.workspace_settings ADD COLUMN IF NOT EXISTS business_tagline TEXT DEFAULT 'Professional Services';

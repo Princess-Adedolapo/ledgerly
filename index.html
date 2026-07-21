@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ledgerly — The All-in-One Client Workspace</title>
+    <meta name="description" content="The ultimate modern workspace to manage clients, track workflows, and generate dynamic invoices. Keep a complete audit trail and handle workflows effortlessly.">
+    <meta name="theme-color" content="#0f0e17" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500&display=swap"
+      rel="stylesheet"
+    />
+    
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    
+    
+
+    <script>
+      // Anti-flash: apply theme before React loads
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          if (stored === 'light') {
+            document.documentElement.classList.remove('dark');
+          } else {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    <meta property="og:title" content="Ledgerly — The All-in-One Client Workspace">
+  <meta name="twitter:title" content="Ledgerly — The All-in-One Client Workspace">
+  <meta property="og:description" content="The ultimate modern workspace to manage clients, track workflows, and generate dynamic invoices. Keep a complete audit trail and handle workflows effortlessly.">
+  <meta name="twitter:description" content="The ultimate modern workspace to manage clients, track workflows, and generate dynamic invoices. Keep a complete audit trail and handle workflows effortlessly.">
+  <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/U2Ufmu3GxVPtFMO9ZVqq8uDs6AS2/social-images/social-1784156227528-ledgerly-social-image_3.webp">
+  <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/U2Ufmu3GxVPtFMO9ZVqq8uDs6AS2/social-images/social-1784156227528-ledgerly-social-image_3.webp">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

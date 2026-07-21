@@ -1,0 +1,3 @@
+ALTER TABLE public.invoices 
+  ADD COLUMN IF NOT EXISTS tax_rate numeric NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS discount numeric NOT NULL DEFAULT 0;

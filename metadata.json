@@ -1,0 +1,6 @@
+{
+  "name": "Ledgerly",
+  "description": "The ultimate modern workspace to manage clients, track workflows, and generate dynamic invoices. Keep a complete audit trail and handle workflows effortlessly.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
