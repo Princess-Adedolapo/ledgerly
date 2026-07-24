@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Plus, Trash2, Download, Percent, Gift, Building2, Mail, Phone, Globe, MapPin } from 'lucide-react';
 import type { Contact } from '../../lib/supabase';
+import SearchableContactSelect from '../contacts/SearchableContactSelect';
 import { Button } from '../ui';
 import { useWorkspace } from '../../lib/workspace';
 import { useUserPreferences } from '../../lib/userPreferences';
@@ -41,11 +42,13 @@ export function GenerateInvoiceModal({
   onClose,
   contacts,
   onSave,
+  initialCustomerName,
 }: {
   open: boolean;
   onClose: () => void;
   contacts: Contact[];
   onSave: (data: InvoiceData) => Promise<void>;
+  initialCustomerName?: string;
 }) {
   const { businessName, businessTagline } = useWorkspace();
   const { currencyCode, currencyDisplayMode } = useUserPreferences();
@@ -61,6 +64,9 @@ export function GenerateInvoiceModal({
   useEffect(() => {
     if (open) {
       setInvoiceCurrency(currencyCode);
+      if (initialCustomerName) {
+        setCustomerName(initialCustomerName);
+      }
       if (!localStorage.getItem('invoice_sender_name') && businessName) {
         setSenderName(businessName);
       }
@@ -68,7 +74,7 @@ export function GenerateInvoiceModal({
         setSenderTagline(businessTagline);
       }
     }
-  }, [open, currencyCode, businessName, businessTagline]);
+  }, [open, currencyCode, businessName, businessTagline, initialCustomerName]);
 
   const fmt = (v: number) => formatCurrency(v, invoiceCurrency, currencyDisplayMode, 2);
   const [invoiceNumber] = useState(generateInvoiceNumber());
@@ -299,16 +305,13 @@ export function GenerateInvoiceModal({
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Customer Name</label>
                   {contacts.length > 0 ? (
-                    <select
+                    <SearchableContactSelect
+                      contacts={contacts}
                       value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className={inputBase}
-                    >
-                      <option value="" disabled>Select a customer...</option>
-                      {contacts.map((c) => (
-                        <option key={c.id} value={c.name}>{c.name}{c.company ? ` — ${c.company}` : ''}</option>
-                      ))}
-                    </select>
+                      valueType="name"
+                      onChange={(val) => setCustomerName(val)}
+                      placeholder="Search or select a customer..."
+                    />
                   ) : (
                     <input
                       type="text"

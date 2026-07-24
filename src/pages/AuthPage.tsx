@@ -22,19 +22,28 @@ export default function AuthPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error } =
-      mode === 'login'
-        ? await signIn(email.trim(), password)
-        : await signUp(email.trim(), password, businessNameInput);
-    setLoading(false);
-    if (error) {
-      setError(error);
-      return;
-    }
-    if (mode === 'signup') {
-      setSignupSuccess(true);
-    } else {
-      navigate('/');
+    try {
+      const { error } =
+        mode === 'login'
+          ? await signIn(email.trim(), password)
+          : await signUp(email.trim(), password, businessNameInput);
+      setLoading(false);
+      if (error) {
+        console.error('[AuthPage] Authentication error:', error);
+        setError(error === '{}' ? 'An unexpected authentication error occurred.' : error);
+        return;
+      }
+      if (mode === 'signup') {
+        setSignupSuccess(true);
+      } else {
+        navigate('/');
+      }
+    } catch (err: unknown) {
+      setLoading(false);
+      console.error('[AuthPage] Authentication exception:', err);
+      const isErrorObj = err instanceof Error;
+      const errMsg = isErrorObj ? err.message : (typeof err === 'object' && err !== null ? JSON.stringify(err) : String(err)) || 'An unexpected error occurred';
+      setError(errMsg === '{}' ? 'An unexpected exception occurred during authentication.' : errMsg);
     }
   };
 

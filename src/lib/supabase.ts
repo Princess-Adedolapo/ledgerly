@@ -9,6 +9,8 @@ export type Contact = {
   phone: string | null;
   company: string | null;
   status: string;
+  description_type: string | null;
+  description_note: string | null;
   created_at: string | null;
 };
 

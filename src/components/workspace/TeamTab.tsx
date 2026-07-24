@@ -12,6 +12,7 @@ import {
 import { useWorkspace } from '../../lib/workspace';
 import { useAuth } from '../../lib/auth';
 import type { WorkspaceRole } from '../../lib/supabase';
+import { useToast } from '../../contexts/ToastContext';
 
 const ROLE_LABEL: Record<WorkspaceRole, string> = {
   owner: 'Owner',
@@ -28,6 +29,7 @@ const ROLE_COLOR: Record<WorkspaceRole, string> = {
 export function TeamTab() {
   const { activeWorkspace, activeWorkspaceId } = useWorkspace();
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [members, setMembers] = useState<MemberWithEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -39,6 +41,8 @@ export function TeamTab() {
   const [copied, setCopied] = useState(false);
 
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [deleteConfirmMember, setDeleteConfirmMember] = useState<MemberWithEmail | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!activeWorkspaceId) {
@@ -61,7 +65,8 @@ export function TeamTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  const myRole: WorkspaceRole | null = members.find((m) => m.user_id === user?.id)?.role ?? null;
+  const isWorkspaceOwner = !!activeWorkspace && !!user && activeWorkspace.owner_id === user.id;
+  const myRole: WorkspaceRole | null = isWorkspaceOwner ? 'owner' : (members.find((m) => m.user_id === user?.id)?.role ?? null);
   const canManage = myRole === 'owner' || myRole === 'admin';
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -77,9 +82,15 @@ export function TeamTab() {
       const token = await inviteMember(email, inviteRole);
       setLastInviteLink(buildInviteLink(token));
       setInviteEmail('');
+      addToast('success', 'Invite Created', `An invitation link was created for ${email}.`);
       await load();
     } catch (err) {
-      setInviteError(err instanceof Error ? err.message : 'Failed to invite');
+      const errMsg = err && typeof err === 'object' && 'message' in err 
+        ? String((err as { message: unknown }).message) 
+        : err instanceof Error 
+          ? err.message 
+          : 'Failed to invite';
+      setInviteError(errMsg);
     } finally {
       setInviting(false);
     }
@@ -94,15 +105,43 @@ export function TeamTab() {
     } catch { /* ignore */ }
   };
 
-  const handleRemove = async (id: string, email: string | null) => {
-    if (!confirm(`Remove ${email ?? 'this member'} from the workspace?`)) return;
-    await removeMember(id);
-    await load();
+  const handleRemove = (member: MemberWithEmail) => {
+    setDeleteConfirmMember(member);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmMember) return;
+    setDeleting(true);
+    try {
+      await removeMember(deleteConfirmMember.id);
+      addToast('success', 'Member Removed', `${deleteConfirmMember.email ?? 'The member'} was removed successfully.`);
+      setDeleteConfirmMember(null);
+      await load();
+    } catch (err) {
+      const errMsg = err && typeof err === 'object' && 'message' in err 
+        ? String((err as { message: unknown }).message) 
+        : err instanceof Error 
+          ? err.message 
+          : 'Failed to remove member';
+      addToast('error', 'Error', errMsg);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleRoleChange = async (id: string, role: WorkspaceRole) => {
-    await updateMemberRole(id, role);
-    await load();
+    try {
+      await updateMemberRole(id, role);
+      addToast('success', 'Role Updated', 'Member role was updated successfully.');
+      await load();
+    } catch (err) {
+      const errMsg = err && typeof err === 'object' && 'message' in err 
+        ? String((err as { message: unknown }).message) 
+        : err instanceof Error 
+          ? err.message 
+          : 'Failed to update role';
+      addToast('error', 'Error', errMsg);
+    }
   };
 
   return (
@@ -148,7 +187,8 @@ export function TeamTab() {
             <tbody>
               {members.map((m) => {
                 const isMe = m.user_id === user?.id;
-                const isOwner = m.role === 'owner';
+                const isOwner = m.role === 'owner' || (activeWorkspace && m.user_id === activeWorkspace.owner_id);
+                const computedRole = isOwner ? 'owner' : m.role;
                 return (
                   <tr key={m.id} className="border-b border-gray-100 dark:border-gray-800/50 last:border-0">
                     <td className="py-3">
@@ -166,16 +206,16 @@ export function TeamTab() {
                     <td className="py-3">
                       {canManage && !isOwner && !isMe ? (
                         <select
-                          value={m.role}
+                          value={computedRole}
                           onChange={(e) => handleRoleChange(m.id, e.target.value as WorkspaceRole)}
-                          className={`text-xs px-2 py-1 rounded-md border ${ROLE_COLOR[m.role]} bg-transparent`}
+                          className={`text-xs px-2 py-1 rounded-md border ${ROLE_COLOR[computedRole]} bg-transparent`}
                         >
                           <option value="admin">Admin</option>
                           <option value="member">Team Member</option>
                         </select>
                       ) : (
-                        <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border ${ROLE_COLOR[m.role]}`}>
-                          {isOwner && <Shield className="w-3 h-3" />} {ROLE_LABEL[m.role]}
+                        <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border ${ROLE_COLOR[computedRole]}`}>
+                          {isOwner && <Shield className="w-3 h-3" />} {ROLE_LABEL[computedRole]}
                         </span>
                       )}
                     </td>
@@ -187,7 +227,7 @@ export function TeamTab() {
                     <td className="py-3 text-right">
                       {canManage && !isOwner && !isMe && (
                         <button
-                          onClick={() => handleRemove(m.id, m.email)}
+                          onClick={() => handleRemove(m)}
                           aria-label="Remove member"
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-all"
                         >
@@ -255,6 +295,39 @@ export function TeamTab() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmMember(null)}>
+          <div className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Remove team member</h3>
+              <button onClick={() => setDeleteConfirmMember(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Are you sure you want to remove <span className="font-semibold text-gray-900 dark:text-gray-100">{deleteConfirmMember.email ?? 'this member'}</span> from the workspace? They will lose access immediately.
+              </p>
+              <div className="flex gap-2 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setDeleteConfirmMember(null)} 
+                  className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleConfirmDelete} 
+                  disabled={deleting} 
+                  className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium disabled:opacity-50"
+                >
+                  {deleting ? 'Removing…' : 'Remove member'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

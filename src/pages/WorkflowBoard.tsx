@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { supabase, type WorkflowCard, type WorkflowColumn, type Contact, type Invoice, type Note, CARD_PRIORITIES, CONTACT_STATUSES } from '../lib/supabase';
+import { Link } from 'react-router-dom';
+import { supabase, type WorkflowCard, type WorkflowColumn, type Contact, type Invoice, CARD_PRIORITIES, CONTACT_STATUSES } from '../lib/supabase';
 import {
   ensureWorkflowColumns,
   getWorkflowCards,
@@ -9,18 +10,21 @@ import {
   deleteWorkflowCard,
   createContact,
   getInvoicesForContact,
-  getNotesForContact,
-  addNoteForContact,
   subscribeToWorkflowCards,
   subscribeToWorkflowColumns,
 } from '../services/workflowService';
 import { PageHeader, Card, Button, Input, Modal } from '../components/ui';
-import { Plus, Users, Calendar, ChevronDown, Trash2, Search, Mail, Phone, Building2, StickyNote, FileText, User as UserIcon } from 'lucide-react';
+import SearchableContactSelect from '../components/contacts/SearchableContactSelect';
+import { Plus, Users, Calendar, ChevronDown, Trash2, Search, Mail, Phone, Building2, FileText, User as UserIcon, Send, FilePlus, MessageSquare, ArrowRightLeft } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useActivityLog } from '../contexts/ActivityLogContext';
 import { useNotificationPreferences } from '../contexts/NotificationContext';
 import { useUserPreferences } from '../lib/userPreferences';
 import { formatCurrency } from '../lib/currency';
+import { ActivityTimeline } from '../components/workflow/ActivityTimeline';
+import { GenerateInvoiceModal, type InvoiceData } from '../components/invoices/GenerateInvoiceModal';
+import { EmailComposerModal } from '../components/email/EmailComposer';
+import { logCardActivity } from '../services/activityService';
 
 const priorityStyles: Record<'low' | 'medium' | 'high', { border: string; badge: string; label: string }> = {
   high: { border: 'border-l-4 border-red-500', badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400', label: 'High' },
@@ -78,10 +82,14 @@ export default function WorkflowBoard() {
   // Detail modal
   const [detailCardId, setDetailCardId] = useState<string | null>(null);
   const [detailInvoices, setDetailInvoices] = useState<Invoice[]>([]);
-  const [detailNotes, setDetailNotes] = useState<Note[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [noteDraft, setNoteDraft] = useState('');
-  const [addingNote, setAddingNote] = useState(false);
+
+  // Quick Action embedded modals
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [moveStageOpen, setMoveStageOpen] = useState(false);
+  const [timelineKey, setTimelineKey] = useState(0);
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<WorkflowCard | null>(null);
@@ -230,16 +238,14 @@ export default function WorkflowBoard() {
   useEffect(() => {
     if (!detailCard || !detailContact) {
       setDetailInvoices([]);
-      setDetailNotes([]);
       return;
     }
     let cancelled = false;
     setDetailLoading(true);
-    Promise.all([getInvoicesForContact(detailContact), getNotesForContact(detailContact.id)])
-      .then(([inv, notes]) => {
+    getInvoicesForContact(detailContact)
+      .then((inv) => {
         if (cancelled) return;
         setDetailInvoices(inv);
-        setDetailNotes(notes);
       })
       .catch(() => {})
       .finally(() => !cancelled && setDetailLoading(false));
@@ -248,17 +254,47 @@ export default function WorkflowBoard() {
     };
   }, [detailCard, detailContact]);
 
-  const handleAddNote = async () => {
-    if (!detailContact || !noteDraft.trim()) return;
-    setAddingNote(true);
-    try {
-      const created = await addNoteForContact(detailContact.id, noteDraft);
-      setDetailNotes((prev) => [created, ...prev]);
-      setNoteDraft('');
-    } catch (err) {
-      addToast('error', 'Note failed', err instanceof Error ? err.message : 'Could not add note');
-    } finally {
-      setAddingNote(false);
+  const handleSaveInvoiceFromModal = async (data: InvoiceData) => {
+    const { tryGetActiveWorkspaceId } = await import('../lib/activeWorkspace');
+    const wsId = tryGetActiveWorkspaceId();
+    if (!wsId) return;
+
+    const contact = contacts.find((c) => c.name === data.customerName) || detailContact;
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id ?? null;
+
+    const { error } = await supabase.from('invoices').insert([
+      {
+        workspace_id: wsId,
+        user_id: userId,
+        invoice_number: data.invoiceNumber,
+        customer_name: data.customerName,
+        amount: data.total,
+        due_date: data.dueDate || null,
+        notes: data.notes || null,
+        status: 'pending',
+        currency_code: data.currencyCode,
+        tax_rate: data.taxRate,
+        discount: data.discount,
+      },
+    ]);
+
+    if (error) throw error;
+
+    await logCardActivity({
+      card_id: detailCard?.id,
+      contact_id: contact?.id ?? null,
+      type: 'invoice_event',
+      content: `Invoice #${data.invoiceNumber} created for ${data.customerName} (${data.currencyCode} ${data.total.toFixed(2)})`,
+    });
+
+    addToast('invoice', 'Invoice Generated', `Invoice #${data.invoiceNumber} created for ${data.customerName}`);
+    setInvoiceModalOpen(false);
+    setTimelineKey((k) => k + 1);
+
+    if (detailContact) {
+      const invs = await getInvoicesForContact(detailContact.name);
+      setDetailInvoices(invs);
     }
   };
 
@@ -433,18 +469,12 @@ export default function WorkflowBoard() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Client</label>
             {!inlineNew ? (
               <>
-                <select
+                <SearchableContactSelect
+                  contacts={contacts}
                   value={form.contact_id}
-                  onChange={(e) => setForm({ ...form, contact_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
-                >
-                  <option value="">Select an existing client...</option>
-                  {contacts.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}{c.company ? ` — ${c.company}` : ''}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setForm({ ...form, contact_id: val })}
+                  placeholder="Search or select an existing client..."
+                />
                 <button
                   type="button"
                   onClick={() => setInlineNew(true)}
@@ -540,12 +570,84 @@ export default function WorkflowBoard() {
       <Modal open={!!detailCard} onClose={() => setDetailCardId(null)} title={detailContact?.name ?? 'Client details'}>
         {detailCard && (
           <div className="space-y-5">
+            {/* Quick Actions Bar */}
+            <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700">
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 w-full sm:w-auto mb-1 sm:mb-0">Quick Actions:</span>
+              <button
+                type="button"
+                onClick={() => setInvoiceModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-sm"
+              >
+                <FilePlus className="w-3.5 h-3.5" />
+                Generate Invoice
+              </button>
+              <button
+                type="button"
+                onClick={() => setWhatsappModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                Send WhatsApp
+              </button>
+              <button
+                type="button"
+                onClick={() => setEmailModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-sm"
+              >
+                <Send className="w-3.5 h-3.5" />
+                Send Email
+              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMoveStageOpen(!moveStageOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all border border-gray-200 dark:border-gray-700 shadow-sm"
+                >
+                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                  Move Stage
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {moveStageOpen && (
+                  <div className="absolute left-0 sm:right-0 sm:left-auto z-30 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
+                    {columns.filter((c) => c.id !== detailCard.column_id).map((target) => (
+                      <button
+                        key={target.id}
+                        type="button"
+                        onClick={() => {
+                          setMoveStageOpen(false);
+                          handleMove(detailCard, target.id);
+                        }}
+                        className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                      >
+                        Move to {target.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Contact info */}
             <div>
-              <h4 className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Contact</h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500">Contact</h4>
+                {detailContact && (
+                  <Link
+                    to={`/contacts/${detailContact.id}`}
+                    className="text-xs text-violet-600 dark:text-violet-400 font-bold hover:underline flex items-center gap-1"
+                  >
+                    Open 360 Profile →
+                  </Link>
+                )}
+              </div>
               {detailContact ? (
                 <div className="space-y-1.5 text-sm">
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{detailContact.name}</p>
+                  <Link
+                    to={`/contacts/${detailContact.id}`}
+                    className="font-semibold text-gray-900 dark:text-gray-100 hover:text-violet-600 dark:hover:text-violet-400 hover:underline block"
+                  >
+                    {detailContact.name}
+                  </Link>
                   {detailContact.company && (
                     <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300"><Building2 className="w-3.5 h-3.5" /> {detailContact.company}</p>
                   )}
@@ -608,41 +710,41 @@ export default function WorkflowBoard() {
               )}
             </div>
 
-            {/* Notes */}
-            <div>
-              <h4 className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-2">
-                <StickyNote className="w-3.5 h-3.5" /> Notes history
-              </h4>
-              <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
-                {detailLoading ? (
-                  <p className="text-sm text-gray-500">Loading...</p>
-                ) : detailNotes.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No notes yet.</p>
-                ) : (
-                  detailNotes.map((n) => (
-                    <div key={n.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
-                      <p className="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{n.body}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">{n.created_at ? new Date(n.created_at).toLocaleString() : ''}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  value={noteDraft}
-                  onChange={(e) => setNoteDraft(e.target.value)}
-                  placeholder="Add a note..."
-                  disabled={!detailContact}
-                  className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
-                />
-                <Button type="button" onClick={handleAddNote} disabled={addingNote || !noteDraft.trim() || !detailContact}>
-                  {addingNote ? 'Saving...' : 'Add'}
-                </Button>
-              </div>
-            </div>
+            {/* Unified Activity Timeline */}
+            <ActivityTimeline
+              key={timelineKey}
+              cardId={detailCard.id}
+              contactId={detailCard.contact_id}
+              onActivityAdded={() => setTimelineKey((k) => k + 1)}
+            />
           </div>
         )}
       </Modal>
+
+      {/* Embedded Action Modals */}
+      <GenerateInvoiceModal
+        open={invoiceModalOpen}
+        onClose={() => setInvoiceModalOpen(false)}
+        contacts={contacts}
+        initialCustomerName={detailContact?.name}
+        onSave={handleSaveInvoiceFromModal}
+      />
+
+      <EmailComposerModal
+        open={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        initialContactId={detailContact?.id}
+        initialChannel="email"
+        onSent={() => setTimelineKey((k) => k + 1)}
+      />
+
+      <EmailComposerModal
+        open={whatsappModalOpen}
+        onClose={() => setWhatsappModalOpen(false)}
+        initialContactId={detailContact?.id}
+        initialChannel="whatsapp"
+        onSent={() => setTimelineKey((k) => k + 1)}
+      />
 
       {/* Delete confirmation */}
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete card?">

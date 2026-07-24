@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase, type Invoice, type Contact } from '../lib/supabase';
 import { PageHeader, Card, Button, EmptyState, StatusBadge } from '../components/ui';
 import { FileText, Download, Plus, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { autoResolveWorkflowCardForCustomer } from '../services/workflowService';
 import { exportToCSV, formatDateForFilename } from '../utils/csvExport';
 import { GenerateInvoiceModal, type InvoiceData } from '../components/invoices/GenerateInvoiceModal';
 import { EditInvoiceModal, type InvoiceEditData } from '../components/invoices/EditInvoiceModal';
@@ -12,6 +14,7 @@ import { useUserPreferences } from '../lib/userPreferences';
 import { useActiveWorkspaceId } from '../lib/workspace';
 import { formatCurrency, getCurrencySymbol } from '../lib/currency';
 import { convertCurrency, aggregateInCurrency } from '../lib/exchangeRates';
+import { logCardActivity } from '../services/activityService';
 
 export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -27,14 +30,30 @@ export default function Invoices() {
 
   const load = useCallback(async () => {
     if (!workspaceId) { setInvoices([]); setContacts([]); setLoading(false); return; }
-    const [inv, ctcts] = await Promise.all([
-      supabase.from('invoices').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }),
-      supabase.from('contacts').select('id, name, company').eq('workspace_id', workspaceId).order('name', { ascending: true }),
-    ]);
-    setInvoices((inv.data ?? []) as Invoice[]);
-    setContacts((ctcts.data ?? []) as Contact[]);
-    setLoading(false);
-  }, [workspaceId]);
+    setLoading(true);
+    try {
+      const [inv, ctcts] = await Promise.all([
+        supabase.from('invoices').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }),
+        supabase.from('contacts').select('id, name, company').eq('workspace_id', workspaceId).order('name', { ascending: true }),
+      ]);
+      
+      if (inv.error) throw new Error(inv.error.message);
+      if (ctcts.error) throw new Error(ctcts.error.message);
+
+      setInvoices((inv.data ?? []) as Invoice[]);
+      setContacts((ctcts.data ?? []) as Contact[]);
+    } catch (err) {
+      console.error('Failed to load invoices:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      const isFetchError = message.toLowerCase().includes('failed to fetch') || message.toLowerCase().includes('load');
+      const friendlyMsg = isFetchError 
+        ? 'Network error. Please check your internet connection or reload the page.' 
+        : message || 'Could not load invoices.';
+      addToast('error', 'Error Loading Invoices', friendlyMsg);
+    } finally {
+      setLoading(false);
+    }
+  }, [workspaceId, addToast]);
 
   useEffect(() => {
     load();
@@ -108,6 +127,11 @@ export default function Invoices() {
 
     const contact = contacts.find((c) => c.name === data.customerName);
     logActivity('invoice', `Invoice #${data.invoiceNumber} created for ${data.customerName}`, contact?.id);
+    await logCardActivity({
+      contact_id: contact?.id ?? null,
+      type: 'invoice_event',
+      content: `Invoice #${data.invoiceNumber} created for ${data.customerName} (${data.currencyCode} ${data.total.toFixed(2)})`,
+    });
     if (preferences.invoiceAlerts) {
       addToast('invoice', 'Invoice Generated', `Invoice #${data.invoiceNumber} created for ${data.customerName}`);
     }
@@ -154,6 +178,13 @@ export default function Invoices() {
       }
     }
 
+    if (data.status === 'paid' && editingInvoice?.customer_name) {
+      const resolved = await autoResolveWorkflowCardForCustomer(editingInvoice.customer_name);
+      if (resolved) {
+        addToast('workflow', 'Workflow Resolved', `Linked workflow card for ${editingInvoice.customer_name} auto-moved to Resolved/Completed.`);
+      }
+    }
+
     logActivity('invoice', `Invoice updated`);
     addToast('invoice', 'Invoice Updated', 'Changes saved.');
     await load();
@@ -168,9 +199,23 @@ export default function Invoices() {
       return;
     }
     logActivity('status', `Invoice #${inv.invoice_number ?? inv.id.slice(0, 8)} marked as ${newStatus}`);
+    const contact = contacts.find((c) => c.name === inv.customer_name);
+    await logCardActivity({
+      contact_id: contact?.id ?? null,
+      type: 'invoice_event',
+      content: `Invoice #${inv.invoice_number ?? inv.id.slice(0, 8)} marked ${newStatus.toUpperCase()}`,
+    });
     if (preferences.invoiceAlerts) {
       addToast('invoice', 'Invoice Status Updated', `Invoice #${inv.invoice_number ?? inv.id.slice(0, 8)} marked as ${newStatus}`);
     }
+
+    if (newStatus === 'paid' && inv.customer_name) {
+      const resolved = await autoResolveWorkflowCardForCustomer(inv.customer_name);
+      if (resolved) {
+        addToast('workflow', 'Workflow Card Resolved', `Linked workflow card for ${inv.customer_name} moved to Resolved/Completed.`);
+      }
+    }
+
     await load();
   };
 
@@ -291,7 +336,23 @@ export default function Invoices() {
                     className="border-b border-gray-100 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer"
                   >
                     <td className="px-5 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{inv.invoice_number ?? inv.id.slice(0, 8)}</td>
-                    <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">{inv.customer_name ?? '—'}</td>
+                    <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">
+                      {(() => {
+                        const matchedContact = contacts.find((c) => c.name?.toLowerCase().trim() === inv.customer_name?.toLowerCase().trim());
+                        if (matchedContact) {
+                          return (
+                            <Link
+                              to={`/contacts/${matchedContact.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-medium text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1"
+                            >
+                              {inv.customer_name}
+                            </Link>
+                          );
+                        }
+                        return inv.customer_name ?? '—';
+                      })()}
+                    </td>
                     <td className="px-5 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
                       {(() => {
                         const originalCurrency = inv.currency_code || 'USD';

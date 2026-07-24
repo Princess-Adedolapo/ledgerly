@@ -14,6 +14,13 @@ import {
   CreditCard,
   Clock,
   Send,
+  X,
+  Tag,
+  Building2,
+  Phone,
+  ShieldCheck,
+  Activity,
+  Plus,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 
@@ -47,7 +54,7 @@ const benefits = [
   'Your data, protected with row-level security',
 ];
 
-const heroPills = ['Invoices & CRM', 'Automated Follow-ups', 'Instant Payment Links'];
+const heroPills = ['CRM & Invoicing', 'Customer 360 View', 'Automated Follow-ups', 'Instant Payment Links'];
 
 // Subtle premium easings
 const easeOut = [0.22, 1, 0.36, 1] as const;
@@ -70,6 +77,441 @@ function StatusTag({ label, tone }: { label: string; tone: Tone }) {
     <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${toneMap[tone]}`}>
       {label}
     </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Customer 360 Live Mockup & Modal                                   */
+/* ------------------------------------------------------------------ */
+
+function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
+  const [activeTab, setActiveTab] = useState<'timeline' | 'tags' | 'invoices'>('timeline');
+
+  return (
+    <div className="space-y-3.5">
+      {/* Header Profile Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-hairline bg-canvas/60">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 font-bold text-white shadow-soft text-sm">
+            AS
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-bold text-ink">Acme Studio</h4>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                Active Client
+              </span>
+            </div>
+            <p className="text-[11px] text-muted">hello@acmestudio.com · Brand & Digital Agency</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="hidden sm:inline-flex px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+            Stage: Retainer Signed
+          </span>
+          {onOpenDemo && (
+            <button
+              type="button"
+              onClick={onOpenDemo}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-accent text-accent-fg shadow-soft hover:bg-accent-hover transition-all"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Demo 360
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Internal Tabs */}
+      <div className="flex items-center gap-1 border-b border-hairline pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('timeline')}
+          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+            activeTab === 'timeline'
+              ? 'bg-accent text-accent-fg shadow-soft'
+              : 'text-muted hover:text-ink hover:bg-panel'
+          }`}
+        >
+          Timeline & Logs (3)
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('tags')}
+          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+            activeTab === 'tags'
+              ? 'bg-accent text-accent-fg shadow-soft'
+              : 'text-muted hover:text-ink hover:bg-panel'
+          }`}
+        >
+          Tags & Fields
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('invoices')}
+          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+            activeTab === 'invoices'
+              ? 'bg-accent text-accent-fg shadow-soft'
+              : 'text-muted hover:text-ink hover:bg-panel'
+          }`}
+        >
+          Invoices & Deals
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div className="min-h-[140px]">
+        {activeTab === 'timeline' && (
+          <div className="space-y-2">
+            <div className="p-2.5 rounded-lg border border-hairline bg-panel flex items-start justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <CreditCard className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-ink">Invoice #INV-1042 Sent ($4,800)</p>
+                  <p className="text-[10px] text-muted">Sent via automated sequence · 2 hours ago</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Sent</span>
+            </div>
+            <div className="p-2.5 rounded-lg border border-hairline bg-panel flex items-start justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                  <Clock className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-ink">Onboarding Call Completed</p>
+                  <p className="text-[10px] text-muted">Key takeaway: Q3 brand refresh deliverable approved · Yesterday</p>
+                </div>
+              </div>
+              <span className="text-[10px] text-muted">Logged</span>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'tags' && (
+          <div className="space-y-2 text-xs">
+            <div className="flex flex-wrap gap-1.5 p-2.5 rounded-lg border border-hairline bg-panel">
+              <span className="px-2 py-0.5 rounded bg-violet-500/15 text-violet-600 dark:text-violet-400 font-bold text-[11px]">VIP Client</span>
+              <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">High Value</span>
+              <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold text-[11px]">Q3 Campaign</span>
+              <span className="px-2 py-0.5 rounded bg-sky-500/15 text-sky-600 dark:text-sky-400 font-bold text-[11px]">Annual Retainer</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="p-2 rounded-lg border border-hairline bg-canvas/40">
+                <span className="text-muted block text-[10px]">Account Manager</span>
+                <span className="font-semibold text-ink">Sarah Chen</span>
+              </div>
+              <div className="p-2 rounded-lg border border-hairline bg-canvas/40">
+                <span className="text-muted block text-[10px]">Lifetime Value</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">$18,400</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'invoices' && (
+          <div className="space-y-2 text-xs">
+            <div className="p-2.5 rounded-lg border border-hairline bg-panel flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-ink">Invoice #INV-1042</p>
+                <p className="text-[10px] text-muted">Due in 14 days · Brand Strategy</p>
+              </div>
+              <span className="font-bold text-accent">$4,800</span>
+            </div>
+            <div className="p-2.5 rounded-lg border border-hairline bg-panel flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-ink">Invoice #INV-1020</p>
+                <p className="text-[10px] text-muted">Paid on Jul 10 · Design System</p>
+              </div>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">$12,000 (Paid)</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Customer360Modal({
+  open,
+  onClose,
+  onGoToAuth,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onGoToAuth: (e: React.MouseEvent) => void;
+}) {
+  const [activeTab, setActiveTab] = useState<'timeline' | 'invoices' | 'deals' | 'notes'>('timeline');
+  const [demoNote, setDemoNote] = useState('');
+  const [notesList, setNotesList] = useState([
+    { id: 1, text: 'Discussed Q4 brand refresh timeline with Alex Morgan. Approved budget of $18,400.', time: '2 hours ago' },
+    { id: 2, text: 'Sent updated retainer proposal via email.', time: 'Yesterday' },
+  ]);
+
+  if (!open) return null;
+
+  const handleAddNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!demoNote.trim()) return;
+    setNotesList([{ id: Date.now(), text: demoNote, time: 'Just now' }, ...notesList]);
+    setDemoNote('');
+  };
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+          transition={{ duration: 0.25 }}
+          className="relative w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl border border-hairline bg-panel shadow-lift overflow-hidden text-ink"
+        >
+          {/* Modal Header */}
+          <div className="flex items-center justify-between p-4 sm:p-5 border-b border-hairline bg-canvas/60">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white font-bold text-base shadow-soft">
+                AS
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-ink">Acme Studio</h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    Active Retainer
+                  </span>
+                </div>
+                <p className="text-xs text-muted flex items-center gap-2 mt-0.5">
+                  <Building2 className="w-3.5 h-3.5 text-muted" /> hello@acmestudio.com · <Phone className="w-3.5 h-3.5 text-muted" /> +1 (555) 234-5678
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onGoToAuth}
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-accent text-accent-fg font-medium text-xs shadow-soft hover:bg-accent-hover transition-all"
+              >
+                Try In Workspace <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-muted hover:text-ink hover:bg-canvas transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 border-b border-hairline bg-canvas/30 text-xs">
+            <div className="p-2.5 rounded-xl border border-hairline bg-panel">
+              <span className="text-muted block text-[10px]">Total Revenue</span>
+              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">$18,400</span>
+            </div>
+            <div className="p-2.5 rounded-xl border border-hairline bg-panel">
+              <span className="text-muted block text-[10px]">Pending Invoices</span>
+              <span className="text-sm font-bold text-accent">$4,800 (#INV-1042)</span>
+            </div>
+            <div className="p-2.5 rounded-xl border border-hairline bg-panel">
+              <span className="text-muted block text-[10px]">Active Pipeline</span>
+              <span className="text-sm font-bold text-ink">Contract Signed ($12k)</span>
+            </div>
+            <div className="p-2.5 rounded-xl border border-hairline bg-panel">
+              <span className="text-muted block text-[10px]">Account Health</span>
+              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" /> 98% (Excellent)
+              </span>
+            </div>
+          </div>
+
+          {/* Modal Tabs Navigation */}
+          <div className="flex items-center gap-2 px-5 pt-3 border-b border-hairline bg-panel">
+            <button
+              type="button"
+              onClick={() => setActiveTab('timeline')}
+              className={`pb-2.5 px-2 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+                activeTab === 'timeline'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-muted hover:text-ink'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" /> Timeline & Activity Logs
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('invoices')}
+              className={`pb-2.5 px-2 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+                activeTab === 'invoices'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-muted hover:text-ink'
+              }`}
+            >
+              <CreditCard className="w-3.5 h-3.5" /> Invoices & Billing
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('deals')}
+              className={`pb-2.5 px-2 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+                activeTab === 'deals'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-muted hover:text-ink'
+              }`}
+            >
+              <KanbanSquare className="w-3.5 h-3.5" /> Pipeline Deals
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('notes')}
+              className={`pb-2.5 px-2 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+                activeTab === 'notes'
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-muted hover:text-ink'
+              }`}
+            >
+              <Tag className="w-3.5 h-3.5" /> Tags & Notes
+            </button>
+          </div>
+
+          {/* Modal Body */}
+          <div className="p-5 overflow-y-auto flex-1 min-h-[260px] space-y-4">
+            {activeTab === 'timeline' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-muted uppercase tracking-wider">Customer Activity Feed</h4>
+                  <span className="text-[11px] text-muted">Real-time synchronized across all modules</span>
+                </div>
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-xl border border-hairline bg-canvas/40 flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-ink">Invoice #INV-1042 Issued</span>
+                        <span className="text-[10px] text-muted">2 hours ago</span>
+                      </div>
+                      <p className="text-muted mt-0.5">$4,800 for Q3 Brand Refresh deliverables</p>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-xl border border-hairline bg-canvas/40 flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 shrink-0">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-ink">Onboarding Strategy Session Logged</span>
+                        <span className="text-[10px] text-muted">Yesterday</span>
+                      </div>
+                      <p className="text-muted mt-0.5">Alex Morgan confirmed scope boundaries and design guidelines</p>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-xl border border-hairline bg-canvas/40 flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                      <KanbanSquare className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-ink">Pipeline Stage Updated</span>
+                        <span className="text-[10px] text-muted">3 days ago</span>
+                      </div>
+                      <p className="text-muted mt-0.5">Moved from "Proposal Sent" → "Contract Signed"</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'invoices' && (
+              <div className="space-y-3 text-xs">
+                <div className="p-3 rounded-xl border border-hairline bg-canvas/40 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-ink text-sm block">Invoice #INV-1042</span>
+                    <span className="text-muted">Issued Jul 22, 2026 · Due in 14 days</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-accent text-sm block">$4,800</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-accent-soft text-accent">Sent</span>
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl border border-hairline bg-canvas/40 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-ink text-sm block">Invoice #INV-1020</span>
+                    <span className="text-muted">Paid on Jul 10, 2026</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm block">$12,000</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">Paid</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'deals' && (
+              <div className="space-y-3 text-xs">
+                <div className="p-3.5 rounded-xl border border-hairline bg-canvas/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-ink text-sm">Q3 Brand Strategy Retainer</span>
+                    <span className="font-bold text-accent">$12,000</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted">
+                    <span className="px-2 py-0.5 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400 text-[10px] font-semibold">
+                      Stage: Contract Signed
+                    </span>
+                    <span>Priority: High</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'notes' && (
+              <div className="space-y-3 text-xs">
+                <form onSubmit={handleAddNote} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={demoNote}
+                    onChange={(e) => setDemoNote(e.target.value)}
+                    placeholder="Type a sample note for Acme Studio..."
+                    className="flex-1 px-3 py-2 rounded-xl border border-hairline bg-canvas text-ink text-xs focus:outline-none focus:border-accent"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-2 rounded-xl bg-accent text-accent-fg font-semibold text-xs shadow-soft hover:bg-accent-hover flex items-center gap-1 shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Note
+                  </button>
+                </form>
+
+                <div className="space-y-2 pt-2">
+                  {notesList.map((n) => (
+                    <div key={n.id} className="p-3 rounded-xl border border-hairline bg-canvas/40 flex items-start justify-between gap-2">
+                      <p className="text-ink font-medium">{n.text}</p>
+                      <span className="text-[10px] text-muted shrink-0">{n.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Modal Footer CTA */}
+          <div className="p-4 border-t border-hairline bg-canvas/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <span className="text-muted">
+              ✨ Customer 360 aggregates contacts, activity logs, workflow stages, and invoices into one screen.
+            </span>
+            <button
+              type="button"
+              onClick={onGoToAuth}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-accent-fg font-semibold text-xs shadow-soft hover:bg-accent-hover transition-all"
+            >
+              Start Free Workspace <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
   );
 }
 
@@ -215,16 +657,22 @@ function FollowUpMockup() {
 
 const slides = [
   {
+    tab: 'CRM',
+    badge: 'CRM',
+    title: 'CRM & client pipelines',
+    Mockup: PipelineMockup,
+  },
+  {
     tab: 'Invoicing',
     badge: 'Invoicing',
     title: 'Invoicing & payment tracking',
     Mockup: InvoicingMockup,
   },
   {
-    tab: 'CRM',
-    badge: 'CRM',
-    title: 'CRM & client pipelines',
-    Mockup: PipelineMockup,
+    tab: 'Customer 360',
+    badge: '360 View',
+    title: 'Customer 360: All client history in 1 view',
+    Mockup: Customer360Mockup,
   },
   {
     tab: 'Follow-ups',
@@ -234,7 +682,7 @@ const slides = [
   },
 ];
 
-function FeatureCarousel() {
+function FeatureCarousel({ onOpen360Demo }: { onOpen360Demo: () => void }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -300,7 +748,7 @@ function FeatureCarousel() {
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.45, ease: easeOut }}
             >
-              <ActiveMockup />
+              <ActiveMockup onOpenDemo={onOpen360Demo} />
             </motion.div>
           </AnimatePresence>
         </div>
@@ -327,6 +775,7 @@ function FeatureCarousel() {
 export default function Landing() {
   const navigate = useNavigate();
   const [navigating, setNavigating] = useState(false);
+  const [modal360Open, setModal360Open] = useState(false);
 
   const goToAuth = useCallback(
     (e: React.MouseEvent) => {
@@ -452,7 +901,7 @@ export default function Landing() {
               ))}
             </motion.div>
 
-            <FeatureCarousel />
+            <FeatureCarousel onOpen360Demo={() => setModal360Open(true)} />
           </div>
         </section>
 
@@ -467,6 +916,50 @@ export default function Landing() {
               forward.
             </p>
           </div>
+
+          {/* Spotlight Customer 360 Feature Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.6, ease: easeOut }}
+            className="mb-12 rounded-3xl border border-violet-500/30 bg-gradient-to-br from-violet-500/5 via-panel to-panel p-6 sm:p-8 shadow-lift relative overflow-hidden"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="lg:col-span-5 space-y-4">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/15 border border-violet-500/25 px-3 py-1 text-xs font-bold text-violet-600 dark:text-violet-400">
+                  <Sparkles className="w-3.5 h-3.5" /> Spotlight Feature
+                </span>
+                <h3 className="text-2xl font-bold text-ink tracking-tight">
+                  Customer 360 View: Your Client&apos;s Entire Story in One Place
+                </h3>
+                <p className="text-sm leading-relaxed text-muted">
+                  Stop hunting through email threads or separate tabs. Instantly view total revenue, active deals, invoice statuses, custom tags, and complete activity history for clients like <strong className="text-ink font-semibold">Acme Studio</strong>.
+                </p>
+                <div className="pt-2 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setModal360Open(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-accent-fg font-semibold text-xs shadow-soft hover:bg-accent-hover transition-all"
+                  >
+                    <Sparkles className="w-4 h-4" /> Try Customer 360 Demo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goToAuth}
+                    className="flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink transition-colors px-3 py-2"
+                  >
+                    Explore Workspace →
+                  </button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-7">
+                <Customer360Mockup onOpenDemo={() => setModal360Open(true)} />
+              </div>
+            </div>
+          </motion.div>
+
           <motion.div
             initial="hidden"
             whileInView="show"
@@ -591,6 +1084,13 @@ export default function Landing() {
           </div>
         </footer>
       </motion.div>
+
+      {/* Customer 360 Interactive Demo Modal */}
+      <Customer360Modal
+        open={modal360Open}
+        onClose={() => setModal360Open(false)}
+        onGoToAuth={goToAuth}
+      />
 
       {/* Fade-to-auth overlay */}
       <AnimatePresence>

@@ -1,13 +1,17 @@
-import { X, UserPlus, FileText, KanbanSquare, CheckCircle, AlertCircle } from 'lucide-react';
-import { useToast, type ToastType } from '../../contexts/ToastContext';
+import { X, UserPlus, FileText, KanbanSquare, CheckCircle, AlertCircle, Info, Bell } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 
-const toastConfig: Record<ToastType, { icon: typeof UserPlus; bg: string; text: string; iconColor: string }> = {
+const toastConfig: Record<string, { icon: typeof UserPlus; bg: string; text: string; iconColor: string }> = {
   contact: { icon: UserPlus, bg: 'bg-sky-500/10 border-sky-500/20', text: 'text-gray-900 dark:text-gray-100', iconColor: 'text-sky-500' },
   invoice: { icon: FileText, bg: 'bg-violet-500/10 border-violet-500/20', text: 'text-gray-900 dark:text-gray-100', iconColor: 'text-violet-500' },
   workflow: { icon: KanbanSquare, bg: 'bg-amber-500/10 border-amber-500/20', text: 'text-gray-900 dark:text-gray-100', iconColor: 'text-amber-500' },
   success: { icon: CheckCircle, bg: 'bg-emerald-500/10 border-emerald-500/20', text: 'text-gray-900 dark:text-gray-100', iconColor: 'text-emerald-500' },
   error: { icon: AlertCircle, bg: 'bg-red-500/10 border-red-500/20', text: 'text-gray-900 dark:text-gray-100', iconColor: 'text-red-500' },
+  info: { icon: Info, bg: 'bg-blue-500/10 border-blue-500/20', text: 'text-gray-900 dark:text-gray-100', iconColor: 'text-blue-500' },
+  warning: { icon: AlertCircle, bg: 'bg-amber-500/10 border-amber-500/20', text: 'text-gray-900 dark:text-gray-100', iconColor: 'text-amber-500' },
 };
+
+const defaultConfig = { icon: Bell, bg: 'bg-indigo-500/10 border-indigo-500/20', text: 'text-gray-900 dark:text-gray-100', iconColor: 'text-indigo-500' };
 
 export function ToastContainer() {
   const { toasts, removeToast } = useToast();
@@ -15,7 +19,7 @@ export function ToastContainer() {
   return (
     <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-80 max-w-[calc(100vw-2rem)] pointer-events-none">
       {toasts.map((toast) => {
-        const config = toastConfig[toast.type];
+        const config = toastConfig[toast.type] || defaultConfig;
         const Icon = config.icon;
         return (
           <div

@@ -10,8 +10,8 @@ import { LayoutDashboard, Users, KanbanSquare, Settings, LogOut, Menu, X, FileTe
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/contacts', label: 'Contacts', icon: Users, end: false },
-  { to: '/workflow', label: 'Workflow Board', icon: KanbanSquare, end: false },
   { to: '/invoices', label: 'Invoices', icon: FileText, end: false },
+  { to: '/workflow', label: 'Workflow Board', icon: KanbanSquare, end: false },
   { to: '/email', label: 'Email Composer', icon: Mail, end: false },
   { to: '/settings', label: 'Settings', icon: Settings, end: false },
 ];

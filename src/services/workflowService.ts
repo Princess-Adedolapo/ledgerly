@@ -1,5 +1,6 @@
 import { supabase, type WorkflowColumn, type WorkflowCard, type Contact, type Invoice, type Note, DEFAULT_WORKFLOW_COLUMNS } from '../lib/supabase';
 import { getActiveWorkspaceId, tryGetActiveWorkspaceId } from '../lib/activeWorkspace';
+import { logCardActivity } from './activityService';
 
 const normalize = (s: string) => s.toLowerCase().replace(/[\s/]+/g, '');
 
@@ -96,7 +97,7 @@ export async function createContact(input: {
 }): Promise<Contact> {
   const wsId = getActiveWorkspaceId();
   const { data: userData } = await supabase.auth.getUser();
-  const uid = userData.user?.id;
+  const uid = userData?.user?.id;
   if (!uid) throw new Error('Not authenticated');
   const { data, error } = await supabase
     .from('contacts')
@@ -142,7 +143,7 @@ export async function getNotesForContact(contactId: string): Promise<Note[]> {
 export async function addNoteForContact(contactId: string, body: string): Promise<Note> {
   const wsId = getActiveWorkspaceId();
   const { data: userData } = await supabase.auth.getUser();
-  const uid = userData.user?.id;
+  const uid = userData?.user?.id;
   if (!uid) throw new Error('Not authenticated');
   const { data, error } = await supabase
     .from('notes')
@@ -167,7 +168,7 @@ export type WorkflowCardInput = {
 export async function createWorkflowCard(input: WorkflowCardInput): Promise<void> {
   const wsId = getActiveWorkspaceId();
   const { data: userData } = await supabase.auth.getUser();
-  const uid = userData.user?.id;
+  const uid = userData?.user?.id;
   if (!uid) throw new Error('Not authenticated');
   const { data: maxRow } = await supabase
     .from('workflow_cards')
@@ -177,7 +178,7 @@ export async function createWorkflowCard(input: WorkflowCardInput): Promise<void
     .limit(1)
     .maybeSingle();
   const nextPosition = (maxRow?.position ?? -1) + 1;
-  const { error } = await supabase.from('workflow_cards').insert({
+  const { data: inserted, error } = await supabase.from('workflow_cards').insert({
     user_id: uid,
     workspace_id: wsId,
     column_id: input.column_id,
@@ -189,8 +190,18 @@ export async function createWorkflowCard(input: WorkflowCardInput): Promise<void
     priority: input.priority,
     position: nextPosition,
     moved_at: input.moved_at ?? new Date().toISOString(),
-  });
+  }).select('*').single();
+
   if (error) throw error;
+
+  if (inserted) {
+    await logCardActivity({
+      card_id: inserted.id,
+      contact_id: inserted.contact_id,
+      type: 'stage_change',
+      content: 'Card created in workflow',
+    });
+  }
 }
 
 
@@ -206,8 +217,65 @@ export type WorkflowCardUpdate = Partial<{
 }>;
 
 export async function updateWorkflowCard(cardId: string, updates: WorkflowCardUpdate): Promise<void> {
+  // Fetch old card info to log specific field changes
+  const { data: oldCard } = await supabase.from('workflow_cards').select('*').eq('id', cardId).maybeSingle();
+
   const { error } = await supabase.from('workflow_cards').update(updates).eq('id', cardId);
   if (error) throw error;
+
+  if (oldCard) {
+    const contactId = updates.contact_id !== undefined ? updates.contact_id : oldCard.contact_id;
+
+    if (updates.column_id && updates.column_id !== oldCard.column_id) {
+      try {
+        const columns = await getWorkflowColumns();
+        const oldCol = columns.find((c) => c.id === oldCard.column_id)?.name || 'Previous Stage';
+        const newCol = columns.find((c) => c.id === updates.column_id)?.name || 'New Stage';
+        await logCardActivity({
+          card_id: cardId,
+          contact_id: contactId,
+          type: 'stage_change',
+          content: `Moved from ${oldCol} to ${newCol}`,
+        });
+      } catch {
+        await logCardActivity({
+          card_id: cardId,
+          contact_id: contactId,
+          type: 'stage_change',
+          content: 'Moved to a new workflow stage',
+        });
+      }
+    }
+
+    if (updates.assignee_name !== undefined && updates.assignee_name !== oldCard.assignee_name) {
+      const newAssignee = updates.assignee_name ? updates.assignee_name : 'Unassigned';
+      await logCardActivity({
+        card_id: cardId,
+        contact_id: contactId,
+        type: 'field_change',
+        content: `Assignee changed to ${newAssignee}`,
+      });
+    }
+
+    if (updates.priority !== undefined && updates.priority !== oldCard.priority) {
+      await logCardActivity({
+        card_id: cardId,
+        contact_id: contactId,
+        type: 'field_change',
+        content: `Priority changed to ${updates.priority.toUpperCase()}`,
+      });
+    }
+
+    if (updates.due_date !== undefined && updates.due_date !== oldCard.due_date) {
+      const dateText = updates.due_date ? new Date(updates.due_date).toLocaleDateString() : 'No due date';
+      await logCardActivity({
+        card_id: cardId,
+        contact_id: contactId,
+        type: 'field_change',
+        content: `Due date set to ${dateText}`,
+      });
+    }
+  }
 }
 
 export async function deleteWorkflowCard(cardId: string): Promise<void> {
@@ -228,6 +296,77 @@ export async function reorderColumns(columns: WorkflowColumn[]): Promise<void> {
   for (const r of results) {
     if (r.error) throw r.error;
   }
+}
+
+export async function autoResolveWorkflowCardForCustomer(customerNameOrId: string): Promise<boolean> {
+  const wsId = tryGetActiveWorkspaceId();
+  if (!wsId || !customerNameOrId) return false;
+
+  try {
+    const cols = await ensureWorkflowColumns();
+    const resolvedCol = cols.find((c) => normalize(c.name) === 'resolvedcompleted' || normalize(c.name).includes('resolved'));
+    if (!resolvedCol) return false;
+
+    let targetContactId = customerNameOrId;
+    const { data: contacts } = await supabase
+      .from('contacts')
+      .select('id, name')
+      .eq('workspace_id', wsId);
+
+    if (contacts && contacts.length > 0) {
+      const match = contacts.find(
+        (c) => c.id === customerNameOrId || c.name.toLowerCase().trim() === customerNameOrId.toLowerCase().trim()
+      );
+      if (match) {
+        targetContactId = match.id;
+      }
+    }
+
+    const { data: openCards } = await supabase
+      .from('workflow_cards')
+      .select('*')
+      .eq('workspace_id', wsId)
+      .eq('contact_id', targetContactId)
+      .neq('column_id', resolvedCol.id)
+      .order('moved_at', { ascending: false });
+
+    if (!openCards || openCards.length === 0) return false;
+
+    const targetCard = openCards[0];
+    await updateWorkflowCard(targetCard.id, {
+      column_id: resolvedCol.id,
+      moved_at: new Date().toISOString(),
+      status_note: targetCard.status_note
+        ? `${targetCard.status_note} · Auto-resolved (Invoice Paid)`
+        : 'Auto-resolved (Invoice Paid)',
+    });
+
+    return true;
+  } catch (err) {
+    console.error('Failed to auto-resolve workflow card:', err);
+    return false;
+  }
+}
+
+export async function createDefaultWorkflowCardForContact(
+  contact: { id: string; name: string; company?: string | null },
+  columnId?: string,
+  priority: 'low' | 'medium' | 'high' = 'medium',
+  statusNote?: string
+): Promise<void> {
+  const cols = await ensureWorkflowColumns();
+  const targetColId = columnId || cols[0]?.id;
+  if (!targetColId) return;
+
+  const title = contact.company ? `${contact.name} (${contact.company})` : contact.name;
+  await createWorkflowCard({
+    title,
+    contact_id: contact.id,
+    priority,
+    column_id: targetColId,
+    status_note: statusNote || 'New lead registered in CRM',
+    moved_at: new Date().toISOString(),
+  });
 }
 
 export function subscribeToWorkflowColumns(callback: () => void) {

@@ -4,7 +4,7 @@ import { setActiveWorkspaceId, tryGetActiveWorkspaceId, getActiveWorkspaceId } f
 
 async function requireFreshSession(): Promise<Session> {
   const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session) {
+  if (!sessionData?.session) {
     throw new Error('No active session — please sign in again.');
   }
 
@@ -13,8 +13,8 @@ async function requireFreshSession(): Promise<Session> {
     console.warn('[workspaceService] session refresh failed, using current session', refreshError);
   }
 
-  const session = refreshed.session ?? sessionData.session;
-  if (!session.access_token) {
+  const session = refreshed?.session ?? sessionData.session;
+  if (!session?.access_token) {
     throw new Error('No active session token — please sign in again.');
   }
   return session;
@@ -22,11 +22,11 @@ async function requireFreshSession(): Promise<Session> {
 
 async function getUserId(): Promise<string> {
   const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session) {
+  if (!sessionData?.session) {
     throw new Error('No active session — please sign in again.');
   }
   const { data } = await supabase.auth.getUser();
-  if (!data.user) throw new Error('Not authenticated');
+  if (!data?.user) throw new Error('Not authenticated');
   return data.user.id;
 }
 
@@ -52,15 +52,33 @@ export async function listMyWorkspaces(): Promise<Workspace[]> {
   return (data ?? []) as Workspace[];
 }
 
+// Module-level promise cache to handle concurrent calls to ensureAtLeastOneWorkspace
+let defaultWorkspacePromise: Promise<Workspace[]> | null = null;
+
 /** Ensures the user has at least one workspace; if not, creates a default one. */
 export async function ensureAtLeastOneWorkspace(): Promise<Workspace[]> {
-  const list = await listMyWorkspaces();
-  if (list.length > 0) return list;
-  // Try to seed one from signup metadata
-  const { data: userData } = await supabase.auth.getUser();
-  const signupName = (userData.user?.user_metadata?.business_name as string | undefined)?.trim();
-  await createWorkspace(signupName || 'My Workspace');
-  return await listMyWorkspaces();
+  if (defaultWorkspacePromise) {
+    return defaultWorkspacePromise;
+  }
+
+  defaultWorkspacePromise = (async () => {
+    try {
+      const list = await listMyWorkspaces();
+      if (list.length > 0) return list;
+      
+      // Try to seed one from signup metadata
+      const { data: userData } = await supabase.auth.getUser();
+      const signupName = (userData.user?.user_metadata?.business_name as string | undefined)?.trim();
+      
+      await createWorkspace(signupName || 'My Workspace');
+      return await listMyWorkspaces();
+    } finally {
+      // Clear the cache when finished so future calls fetch fresh data
+      defaultWorkspacePromise = null;
+    }
+  })();
+
+  return defaultWorkspacePromise;
 }
 
 /** Creates a workspace, adds the current user as Owner, and returns it. */

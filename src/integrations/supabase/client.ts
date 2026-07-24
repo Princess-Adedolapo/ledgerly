@@ -2,8 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'placeholder';
 
 
 function isNewSupabaseApiKey(value: string): boolean {
@@ -11,7 +11,7 @@ function isNewSupabaseApiKey(value: string): boolean {
 }
 
 function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
+  return async (input, init) => {
     const headers = new Headers(
       typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
     );
@@ -25,8 +25,50 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
       headers.delete('Authorization');
     }
 
-    headers.set('apikey', supabaseKey);
-    return fetch(input, { ...init, headers });
+    if (supabaseKey) {
+      headers.set('apikey', supabaseKey);
+    }
+
+    try {
+      return await fetch(input, { ...init, headers });
+    } catch (err) {
+      console.warn('[Supabase Fetch Error Intercepted]:', err);
+      const urlStr = typeof input === 'string' ? input : (input && 'url' in input ? (input as Request).url : '');
+
+      if (urlStr.includes('/auth/v1/')) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: 'Network connection unavailable or server unreachable.',
+              name: 'AuthApiError',
+              status: 503,
+            },
+            user: null,
+            session: null,
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          message: 'Network connection unavailable',
+          code: 'FETCH_ERROR',
+          details: 'Failed to fetch',
+          hint: 'Please check backend connectivity',
+        }),
+        {
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json',
+            'content-range': '0-0/0',
+          },
+        }
+      );
+    }
   };
 }
 
