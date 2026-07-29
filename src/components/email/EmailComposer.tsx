@@ -29,10 +29,16 @@ You're receiving this because you signed up with [BusinessName]. Reply STOP if y
   },
   payment: {
     label: 'Payment Reminder',
-    subject: 'Quick reminder about your balance',
+    subject: 'Quick reminder about your balance ([InvoiceNumber])',
     body: `Hi [CustomerName],
 
-Just a friendly note that your account with [BusinessName] currently shows an outstanding balance of [OutstandingBalance]. Whenever it's convenient, please settle it at your earliest opportunity.
+Just a friendly note that your account with [BusinessName] currently shows an outstanding balance of [OutstandingBalance] for Invoice [InvoiceNumber].
+
+💳 Pay Online Securely:
+[PaymentLink]
+
+📄 Download Invoice PDF:
+[InvoiceLink]
 
 If you've already sent payment, please disregard this message and accept our thanks.
 
@@ -143,6 +149,22 @@ export default function EmailComposer({
     setInvoiceLink('');
   }, [selectedInvoiceId, selectedTemplate]);
 
+  // Auto-select invoice for selected customer when template is payment or thankyou
+  useEffect(() => {
+    if (selectedContact && (selectedTemplate === 'payment' || selectedTemplate === 'thankyou')) {
+      const contactInvoices = invoices.filter(
+        (inv) => inv.customer_name?.toLowerCase().trim() === selectedContact.name?.toLowerCase().trim()
+      );
+      if (contactInvoices.length > 0) {
+        const unpaid = contactInvoices.find((inv) => inv.status !== 'paid');
+        const target = unpaid || contactInvoices[0];
+        if (target && target.id !== selectedInvoiceId) {
+          setSelectedInvoiceId(target.id);
+        }
+      }
+    }
+  }, [selectedContact, selectedTemplate, invoices, selectedInvoiceId]);
+
   // Sync WhatsApp phone state when selected customer changes
   useEffect(() => {
     if (selectedContact) {
@@ -182,12 +204,17 @@ export default function EmailComposer({
     const customerName = selectedContact?.name ?? '[CustomerName]';
     const bizName = businessName ?? '[BusinessName]';
     const outstandingBalance = selectedInvoice
-      ? formatCurrency(Number(selectedInvoice.amount), currencyCode, currencyDisplayMode)
-      : '0.00';
-    const invoiceNumber = selectedInvoice?.invoice_number ?? '[InvoiceNumber]';
+      ? formatCurrency(Number(selectedInvoice.amount), selectedInvoice.currency_code || currencyCode, currencyDisplayMode)
+      : '[OutstandingBalance]';
+    const invoiceNumber = selectedInvoice?.invoice_number ?? (selectedInvoice ? selectedInvoice.id.slice(0, 8) : '[InvoiceNumber]');
     const invoiceAmount = selectedInvoice
-      ? formatCurrency(Number(selectedInvoice.amount), currencyCode, currencyDisplayMode)
+      ? formatCurrency(Number(selectedInvoice.amount), selectedInvoice.currency_code || currencyCode, currencyDisplayMode)
       : '[InvoiceAmount]';
+
+    const portalUrl = selectedInvoice
+      ? `${window.location.origin}/portal/${selectedInvoice.document_type || 'invoice'}/${selectedInvoice.id}`
+      : '[PaymentLink]';
+
     const linkText = invoiceLink
       ? `Download your invoice PDF: ${invoiceLink}`
       : selectedInvoice
@@ -201,6 +228,7 @@ export default function EmailComposer({
         .replace(/\[OutstandingBalance\]/g, outstandingBalance)
         .replace(/\[InvoiceNumber\]/g, invoiceNumber)
         .replace(/\[InvoiceAmount\]/g, invoiceAmount)
+        .replace(/\[PaymentLink\]/g, portalUrl)
         .replace(/\[InvoiceLink\]/g, linkText);
 
     return { subject: replace(tmpl.subject), body: replace(tmpl.body) };
@@ -388,20 +416,22 @@ export default function EmailComposer({
                 placeholder="Search or select a customer..."
               />
 
-              {selectedTemplate === 'thankyou' && (
+              {(selectedTemplate === 'thankyou' || selectedTemplate === 'payment') && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Invoice to attach</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    {selectedTemplate === 'payment' ? 'Invoice to attach & remind' : 'Invoice to attach'}
+                  </label>
                   <select
                     value={selectedInvoiceId}
                     onChange={(e) => setSelectedInvoiceId(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all"
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all text-sm"
                   >
                     <option value="">Select an invoice...</option>
                     {invoices
-                      .filter((inv) => !selectedContact || inv.customer_name === selectedContact.name)
+                      .filter((inv) => !selectedContact || inv.customer_name?.toLowerCase().trim() === selectedContact.name?.toLowerCase().trim())
                       .map((inv) => (
                         <option key={inv.id} value={inv.id}>
-                          {inv.invoice_number ?? inv.id.slice(0, 8)} — {formatCurrency(Number(inv.amount), currencyCode, currencyDisplayMode)}
+                          {inv.invoice_number ?? inv.id.slice(0, 8)} — {formatCurrency(Number(inv.amount), inv.currency_code || currencyCode, currencyDisplayMode)} ({inv.status.toUpperCase()})
                         </option>
                       ))}
                   </select>
@@ -411,10 +441,10 @@ export default function EmailComposer({
                     className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-violet-500/30 text-violet-600 dark:text-violet-400 hover:bg-violet-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {attaching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Paperclip className="w-3.5 h-3.5" />}
-                    {attaching ? 'Generating PDF...' : invoiceLink ? 'Re-generate link' : 'Generate & attach invoice PDF'}
+                    {attaching ? 'Generating PDF...' : invoiceLink ? 'Re-generate PDF link' : 'Generate & attach invoice PDF'}
                   </button>
                   {invoiceLink && (
-                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1.5">✓ Link added to email (valid 30 days).</p>
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1.5 font-medium">✓ Permanent invoice PDF link generated and added.</p>
                   )}
                 </div>
               )}

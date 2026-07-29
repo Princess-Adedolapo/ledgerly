@@ -252,39 +252,106 @@ export async function initiatePaystackCheckout(options: InitiatePaystackOptions)
       (invoice.sender_info?.email ? invoice.sender_info.email : '') ||
       'client@example.com';
 
-    const handler = window.PaystackPop.setup({
+    // Ensure any Paystack popup iframe dynamically created gets clipboard permissions
+    const grantIframePermissions = () => {
+      document.querySelectorAll('iframe').forEach((iframe) => {
+        iframe.setAttribute('allow', 'clipboard-write; clipboard-read; payment');
+      });
+    };
+    grantIframePermissions();
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of Array.from(mutation.addedNodes)) {
+          if (node instanceof HTMLElement) {
+            const iframes = node.tagName === 'IFRAME' ? [node as HTMLIFrameElement] : Array.from(node.querySelectorAll('iframe'));
+            for (const iframe of iframes) {
+              iframe.setAttribute('allow', 'clipboard-write; clipboard-read; payment');
+            }
+          }
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => observer.disconnect(), 300000);
+
+    // Standard synchronous function wrappers (Paystack inline JS validates function constructors)
+    const handleSuccessCallback = function (response: { reference?: string; trans?: string; transaction?: string; status?: string }) {
+      const transRef = response?.reference || response?.trans || response?.transaction || reference;
+      verifyPaystackPaymentOnServer(transRef, invoice.id)
+        .then(() => markInvoicePaidWithPaystack(invoice, transRef, emailToUse))
+        .catch((err) => {
+          console.warn('[Paystack Verification Warning]:', err);
+          return markInvoicePaidWithPaystack(invoice, transRef, emailToUse);
+        })
+        .then(() => {
+          onSuccess(transRef);
+        })
+        .catch((err) => {
+          console.error('[Paystack Final Handling Error]:', err);
+          onSuccess(transRef);
+        });
+    };
+
+    const handleCloseCallback = function () {
+      if (onClose) {
+        onClose();
+      }
+    };
+
+    const paystackOptions = {
       key: publicKey,
       email: emailToUse,
       amount: amountInKobo,
       currency: 'NGN',
       ref: reference,
+      reference: reference,
       metadata: {
+        custom_fields: [
+          {
+            display_name: 'Invoice Number',
+            variable_name: 'invoice_number',
+            value: invoice.invoice_number || invoice.id,
+          },
+        ],
         invoice_id: invoice.id,
         invoice_number: invoice.invoice_number || invoice.id,
         customer_name: customerName || invoice.customer_name || '',
         workspace_id: invoice.workspace_id || '',
       },
-      callback: async (response) => {
-        const transRef = response.reference || reference;
-        try {
-          // Perform server-side verification first
-          await verifyPaystackPaymentOnServer(transRef, invoice.id);
-          // Update DB, workflow cards, activity log and local cache
-          await markInvoicePaidWithPaystack(invoice, transRef, emailToUse);
-          onSuccess(transRef);
-        } catch (err) {
-          console.error('[Paystack Callback Error]:', err);
-          // Still attempt database mark if user completed payment
-          await markInvoicePaidWithPaystack(invoice, transRef, emailToUse);
-          onSuccess(transRef);
-        }
-      },
-      onClose: () => {
-        if (onClose) onClose();
-      },
-    });
+      callback: handleSuccessCallback,
+      onSuccess: handleSuccessCallback,
+      onClose: handleCloseCallback,
+      onCancel: handleCloseCallback,
+    };
 
-    handler.openIframe();
+    interface PaystackPopHandler {
+      setup?: (options: unknown) => { openIframe?: () => void };
+      newTransaction?: (options: unknown) => void;
+      new (options?: unknown): { newTransaction?: (options: unknown) => void };
+    }
+
+    const Paystack = window.PaystackPop as unknown as PaystackPopHandler;
+
+    if (Paystack && typeof Paystack.setup === 'function') {
+      const handler = Paystack.setup(paystackOptions);
+      if (handler && typeof handler.openIframe === 'function') {
+        handler.openIframe();
+      }
+    } else if (typeof Paystack === 'function') {
+      try {
+        const paystackInstance = new Paystack();
+        if (typeof paystackInstance.newTransaction === 'function') {
+          paystackInstance.newTransaction(paystackOptions);
+        } else {
+          Paystack(paystackOptions);
+        }
+      } catch {
+        Paystack(paystackOptions);
+      }
+    } else {
+      throw new Error('Paystack SDK is not available.');
+    }
   } catch (err) {
     const errorObj = err instanceof Error ? err : new Error('Unable to launch Paystack payment window.');
     if (onError) onError(errorObj);
