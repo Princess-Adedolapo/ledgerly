@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useDebounce } from '../hooks/useDebounce';
 import { supabase, type WorkflowCard, type WorkflowColumn, type Contact, type Invoice, CARD_PRIORITIES, CONTACT_STATUSES } from '../lib/supabase';
 import {
   ensureWorkflowColumns,
@@ -25,6 +26,10 @@ import { ActivityTimeline } from '../components/workflow/ActivityTimeline';
 import { GenerateInvoiceModal, type InvoiceData } from '../components/invoices/GenerateInvoiceModal';
 import { EmailComposerModal } from '../components/email/EmailComposer';
 import { logCardActivity } from '../services/activityService';
+import { DealWinProbabilityBadge } from '../components/workflow/DealWinProbabilityBadge';
+import { MeetingSummarizerModal } from '../components/ai/MeetingSummarizerModal';
+import { Sparkles } from 'lucide-react';
+import { getErrorMessage } from '../lib/errorUtils';
 
 const priorityStyles: Record<'low' | 'medium' | 'high', { border: string; badge: string; label: string }> = {
   high: { border: 'border-l-4 border-red-500', badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400', label: 'High' },
@@ -63,6 +68,7 @@ export default function WorkflowBoard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 250);
 
   const { addToast } = useToast();
   const { logActivity } = useActivityLog();
@@ -93,6 +99,12 @@ export default function WorkflowBoard() {
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<WorkflowCard | null>(null);
+
+  // AI Meeting Summarizer Modal
+  const [summarizerOpen, setSummarizerOpen] = useState(false);
+  const [summarizerContactId, setSummarizerContactId] = useState<string | undefined>(undefined);
+  const [summarizerContactName, setSummarizerContactName] = useState<string | undefined>(undefined);
+  const [summarizerNotes, setSummarizerNotes] = useState<string>('');
 
   // Move dropdown state
   const [moveMenuId, setMoveMenuId] = useState<string | null>(null);
@@ -138,8 +150,14 @@ export default function WorkflowBoard() {
     return m;
   }, [contacts]);
 
+  const columnById = useMemo(() => {
+    const m = new Map<string, WorkflowColumn>();
+    columns.forEach((c) => m.set(c.id, c));
+    return m;
+  }, [columns]);
+
   const filteredCards = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     if (!q) return cards;
     return cards.filter((card) => {
       const c = card.contact_id ? contactById.get(card.contact_id) : null;
@@ -147,7 +165,7 @@ export default function WorkflowBoard() {
       const company = c?.company?.toLowerCase() ?? '';
       return name.includes(q) || company.includes(q);
     });
-  }, [cards, contactById, search]);
+  }, [cards, contactById, debouncedSearch]);
 
   const openAdd = (columnId: string) => {
     setForm(emptyForm(columnId));
@@ -196,7 +214,7 @@ export default function WorkflowBoard() {
       setAddOpen(false);
       await load();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Failed to add card');
+      setFormError(getErrorMessage(err, 'Failed to add card. Please try again.'));
     } finally {
       setSaving(false);
     }
@@ -216,7 +234,7 @@ export default function WorkflowBoard() {
       }
       await load();
     } catch (err) {
-      addToast('error', 'Move failed', err instanceof Error ? err.message : 'Could not move card');
+      addToast('error', 'Move failed', getErrorMessage(err, 'Could not move card to selected column.'));
     }
   };
 
@@ -227,7 +245,7 @@ export default function WorkflowBoard() {
       setDeleteTarget(null);
       await load();
     } catch (err) {
-      addToast('error', 'Delete failed', err instanceof Error ? err.message : 'Could not delete card');
+      addToast('error', 'Delete failed', getErrorMessage(err, 'Could not delete card from workflow.'));
     }
   };
 
@@ -328,9 +346,23 @@ export default function WorkflowBoard() {
         title="Workflow Board"
         subtitle={`${cards.length} ${cards.length === 1 ? 'client' : 'clients'} across ${columns.length} columns`}
         action={
-          <Button onClick={() => openAdd(columns[0]?.id ?? '')}>
-            <span className="flex items-center gap-2"><Plus className="w-4 h-4" /> Add Card</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSummarizerContactId(undefined);
+                setSummarizerContactName(undefined);
+                setSummarizerNotes('');
+                setSummarizerOpen(true);
+              }}
+              className="gap-2 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-950/40"
+            >
+              <Sparkles className="w-4 h-4 text-violet-500" /> AI Note Summarizer
+            </Button>
+            <Button onClick={() => openAdd(columns[0]?.id ?? '')}>
+              <span className="flex items-center gap-2"><Plus className="w-4 h-4" /> Add Card</span>
+            </Button>
+          </div>
         }
       />
 
@@ -396,7 +428,10 @@ export default function WorkflowBoard() {
                               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{contact.company}</p>
                             )}
                           </div>
-                          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.badge}`}>{p.label}</span>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.badge}`}>{p.label}</span>
+                            <DealWinProbabilityBadge card={card} column={columnById.get(card.column_id)} size="sm" />
+                          </div>
                         </div>
 
                         {card.status_note && (
@@ -573,6 +608,20 @@ export default function WorkflowBoard() {
             {/* Quick Actions Bar */}
             <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700">
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 w-full sm:w-auto mb-1 sm:mb-0">Quick Actions:</span>
+              <DealWinProbabilityBadge card={detailCard} column={columnById.get(detailCard.column_id)} size="md" />
+              <button
+                type="button"
+                onClick={() => {
+                  setSummarizerContactId(detailContact?.id);
+                  setSummarizerContactName(detailContact?.name);
+                  setSummarizerNotes(detailCard.status_note || '');
+                  setSummarizerOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-sm"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                AI Summarize Notes
+              </button>
               <button
                 type="button"
                 onClick={() => setInvoiceModalOpen(true)}
@@ -744,6 +793,14 @@ export default function WorkflowBoard() {
         initialContactId={detailContact?.id}
         initialChannel="whatsapp"
         onSent={() => setTimelineKey((k) => k + 1)}
+      />
+
+      <MeetingSummarizerModal
+        isOpen={summarizerOpen}
+        onClose={() => setSummarizerOpen(false)}
+        contactId={summarizerContactId}
+        contactName={summarizerContactName}
+        initialNotes={summarizerNotes}
       />
 
       {/* Delete confirmation */}

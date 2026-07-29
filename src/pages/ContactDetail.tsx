@@ -33,6 +33,9 @@ import {
   downloadICSFile,
 } from '../utils/ics';
 import { FollowUpSchedulerModal } from '../components/followup/FollowUpSchedulerModal';
+import { MeetingSummarizerModal } from '../components/ai/MeetingSummarizerModal';
+import { DealWinProbabilityBadge } from '../components/workflow/DealWinProbabilityBadge';
+import { Sparkles } from 'lucide-react';
 
 export default function ContactDetail() {
   const { id } = useParams<{ id: string }>();
@@ -97,6 +100,10 @@ export default function ContactDetail() {
   // Follow-up state
   const [followUp, setFollowUp] = useState<FollowUpMeta | null>(null);
   const [schedulerOpen, setSchedulerOpen] = useState(false);
+
+  // AI Meeting Summarizer State
+  const [summarizerOpen, setSummarizerOpen] = useState(false);
+  const [summarizerText, setSummarizerText] = useState('');
 
   const DESCRIPTION_TYPES = [
     'Other / Uncategorized',
@@ -846,8 +853,22 @@ export default function ContactDetail() {
                   const statusInfo = getFollowUpStatusInfo(followUp.dueDate, followUp.completed);
                   const title = `Follow up with ${contact.name}`;
                   const description = followUp.note || `Scheduled pitch/follow-up call with ${contact.name}`;
-                  const googleUrl = getGoogleCalendarUrl(title, description, followUp.dueDate, contact.email || undefined);
-                  const outlookUrl = getOutlookCalendarUrl(title, description, followUp.dueDate, contact.email || undefined);
+                  const calEvent = {
+                    title,
+                    description,
+                    startDate: followUp.dueDate,
+                  };
+                  const googleUrl = getGoogleCalendarUrl(calEvent);
+                  const outlookUrl = getOutlookCalendarUrl(calEvent);
+
+                  const dueFormatted = (() => {
+                    try {
+                      const d = new Date(followUp.dueDate);
+                      return isNaN(d.getTime()) ? 'N/A' : d.toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' });
+                    } catch {
+                      return 'N/A';
+                    }
+                  })();
 
                   return (
                     <div className="p-3.5 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-800 rounded-xl space-y-3">
@@ -866,7 +887,7 @@ export default function ContactDetail() {
                               {statusInfo.label}
                             </span>
                             <p className="text-xs font-semibold text-gray-900 dark:text-white mt-1">
-                              Due: {new Date(followUp.dueDate).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' })}
+                              Due: {dueFormatted}
                             </p>
                           </div>
                         </div>
@@ -887,7 +908,7 @@ export default function ContactDetail() {
                           <div className="flex flex-wrap items-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() => downloadICSFile(title, description, followUp.dueDate, `${contact.name.replace(/\s+/g, '_')}_followup.ics`, contact.email || undefined)}
+                              onClick={() => downloadICSFile(calEvent, `${contact.name.replace(/\s+/g, '_')}_followup.ics`)}
                               className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-[11px] font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/80 flex items-center gap-1"
                             >
                               <CalendarDays className="w-3.5 h-3.5 text-indigo-500" /> Apple/iCal (.ics)
@@ -895,7 +916,7 @@ export default function ContactDetail() {
                             <a
                               href={googleUrl}
                               target="_blank"
-                              rel="noreferrer"
+                              rel="noopener noreferrer"
                               className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-[11px] font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/80 flex items-center gap-1"
                             >
                               <ExternalLink className="w-3 h-3 text-emerald-500" /> Google
@@ -903,7 +924,7 @@ export default function ContactDetail() {
                             <a
                               href={outlookUrl}
                               target="_blank"
-                              rel="noreferrer"
+                              rel="noopener noreferrer"
                               className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-[11px] font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/80 flex items-center gap-1"
                             >
                               <ExternalLink className="w-3 h-3 text-blue-500" /> Outlook
@@ -1063,16 +1084,19 @@ export default function ContactDetail() {
               {workflowCards.map((card) => {
                 const col = workflowCols.find((c) => c.id === card.column_id);
                 return (
-                  <div key={card.id} className="p-4 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-800 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between">
+                  <div key={card.id} className="p-4 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-800 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
                         {col ? col.name : 'Stage'}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${
-                        card.priority === 'high' ? 'bg-rose-500/10 text-rose-600' : card.priority === 'medium' ? 'bg-amber-500/10 text-amber-600' : 'bg-blue-500/10 text-blue-600'
-                      }`}>
-                        {card.priority}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <DealWinProbabilityBadge card={card} column={col} size="sm" />
+                        <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${
+                          card.priority === 'high' ? 'bg-rose-500/10 text-rose-600' : card.priority === 'medium' ? 'bg-amber-500/10 text-amber-600' : 'bg-blue-500/10 text-blue-600'
+                        }`}>
+                          {card.priority}
+                        </span>
+                      </div>
                     </div>
 
                     <h3 className="font-bold text-gray-900 dark:text-white">{card.title}</h3>
@@ -1134,7 +1158,24 @@ export default function ContactDetail() {
       {/* TAB CONTENT: NOTES */}
       {activeTab === 'notes' && (
         <Card className="p-5 space-y-4">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Interaction Notes</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Interaction & Meeting Notes</h2>
+              <p className="text-xs text-gray-500">Record call logs, meeting discussions, or client notes.</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const allNotesText = notes.map((n) => n.body).join('\n\n');
+                setSummarizerText(allNotesText || noteBody || '');
+                setSummarizerOpen(true);
+              }}
+              className="gap-2 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-xs"
+            >
+              <Sparkles className="w-4 h-4 text-violet-500" /> AI Note & Meeting Summarizer
+            </Button>
+          </div>
 
           <form onSubmit={addNote} className="space-y-2">
             <textarea
@@ -1144,10 +1185,24 @@ export default function ContactDetail() {
               rows={3}
               className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
             />
-            <div className="flex justify-end">
-              <Button type="submit" disabled={savingNote || !noteBody.trim()}>
-                <Plus className="w-4 h-4 mr-1" /> {savingNote ? 'Adding...' : 'Add Note'}
-              </Button>
+            <div className="flex justify-between items-center">
+              {noteBody.trim().length > 15 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSummarizerText(noteBody);
+                    setSummarizerOpen(true);
+                  }}
+                  className="text-xs text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1 font-semibold"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> AI Summarize Draft
+                </button>
+              )}
+              <div className="ml-auto">
+                <Button type="submit" disabled={savingNote || !noteBody.trim()}>
+                  <Plus className="w-4 h-4 mr-1" /> {savingNote ? 'Adding...' : 'Add Note'}
+                </Button>
+              </div>
             </div>
           </form>
 
@@ -1157,18 +1212,31 @@ export default function ContactDetail() {
             <div className="space-y-3">
               {notes.map((n) => (
                 <div key={n.id} className="group bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap flex-1">{n.body}</p>
-                    <button
-                      onClick={() => deleteNote(n.id)}
-                      className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span className="text-[11px] font-semibold text-gray-400 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {n.created_at ? new Date(n.created_at).toLocaleString() : 'Recorded'}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setSummarizerText(n.body);
+                          setSummarizerOpen(true);
+                        }}
+                        className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1"
+                      >
+                        <Sparkles className="w-3 h-3" /> AI Summarize
+                      </button>
+                      <button
+                        onClick={() => deleteNote(n.id)}
+                        className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                        title="Delete note"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                    {n.created_at ? new Date(n.created_at).toLocaleString() : 'Just now'}
-                  </p>
+                  <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{n.body}</p>
                 </div>
               ))}
             </div>
@@ -1308,6 +1376,17 @@ export default function ContactDetail() {
           onSaved={() => {
             load();
           }}
+        />
+      )}
+
+      {/* AI Meeting Summarizer Modal */}
+      {contact && (
+        <MeetingSummarizerModal
+          isOpen={summarizerOpen}
+          onClose={() => setSummarizerOpen(false)}
+          contactId={contact.id}
+          contactName={contact.name || contact.company || 'Contact'}
+          initialNotes={summarizerText}
         />
       )}
     </div>

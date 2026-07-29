@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { setActiveWorkspaceId } from './activeWorkspace';
 
 type AuthContextType = {
   session: Session | null;
@@ -17,29 +18,68 @@ const AuthContext =
   (g[globalKey] as React.Context<AuthContextType | undefined>) ??
   (g[globalKey] = createContext<AuthContextType | undefined>(undefined));
 
+/** Purge all local user session data and cached workspace credentials */
+function purgeUserSessionData() {
+  setActiveWorkspaceId(null);
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('active_workspace_id');
+      localStorage.removeItem('invoice_sender_name');
+      localStorage.removeItem('invoice_sender_tagline');
+      localStorage.removeItem('invoice_sender_address');
+      localStorage.removeItem('invoice_sender_phone');
+      localStorage.removeItem('invoice_sender_email');
+      localStorage.removeItem('invoice_sender_website');
+      sessionStorage.clear();
+    } catch {
+      /* ignore storage errors */
+    }
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     supabase.auth
       .getSession()
-      .then(({ data }) => {
-        setSession(data?.session ?? null);
+      .then(({ data, error }) => {
+        if (!isMounted) return;
+        if (error || !data?.session) {
+          if (error) console.warn('[auth getSession] Session error or expired:', error.message);
+          purgeUserSessionData();
+          setSession(null);
+        } else {
+          setSession(data.session);
+        }
       })
       .catch((err) => {
+        if (!isMounted) return;
         console.warn('[auth getSession] Failed to fetch session:', err);
+        purgeUserSessionData();
+        setSession(null);
       })
       .finally(() => {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (!isMounted) return;
+
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED' || !newSession) {
+        purgeUserSessionData();
+        setSession(null);
+      } else {
+        setSession(newSession);
+      }
       setLoading(false);
     });
 
     return () => {
+      isMounted = false;
       listener?.subscription?.unsubscribe();
     };
   }, []);
@@ -139,7 +179,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('[auth signOut] Error calling supabase.auth.signOut():', err);
+    } finally {
+      purgeUserSessionData();
+      setSession(null);
+    }
   };
 
   return (

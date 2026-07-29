@@ -17,9 +17,16 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [botField, setBotField] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (botField) {
+      // Automated bot detected via honeypot field
+      setLoading(false);
+      setError('Bot verification failed. Please try submitting again.');
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -117,6 +124,20 @@ export default function AuthPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Honeypot field for bot protection - hidden visually from genuine human users */}
+                <div style={{ display: 'none' }} aria-hidden="true">
+                  <label htmlFor="confirm_website_hp">Do not fill this field</label>
+                  <input
+                    id="confirm_website_hp"
+                    type="text"
+                    name="confirm_website_hp"
+                    tabIndex={-1}
+                    value={botField}
+                    onChange={(e) => setBotField(e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
                   <div className="relative">

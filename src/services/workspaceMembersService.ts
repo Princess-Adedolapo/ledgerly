@@ -1,5 +1,6 @@
 import { supabase, type WorkspaceMember, type WorkspaceRole } from '../lib/supabase';
 import { getActiveWorkspaceId } from '../lib/activeWorkspace';
+import { MemberInviteSchema } from '../lib/validation';
 
 export type MemberWithEmail = WorkspaceMember & { email: string | null };
 
@@ -36,14 +37,13 @@ function makeToken() {
 
 /** Adds a pending invite for an email. Returns the invite token. */
 export async function inviteMember(email: string, role: WorkspaceRole = 'member'): Promise<string> {
+  const validated = MemberInviteSchema.parse({ email, role });
   const wsId = getActiveWorkspaceId();
-  const cleanEmail = email.trim().toLowerCase();
-  if (!cleanEmail) throw new Error('Email is required');
   const token = makeToken();
   const { error } = await supabase.from('workspace_members').insert({
     workspace_id: wsId,
-    invited_email: cleanEmail,
-    role,
+    invited_email: validated.email,
+    role: validated.role as WorkspaceRole,
     status: 'pending',
     invite_token: token,
   });

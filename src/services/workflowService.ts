@@ -1,6 +1,7 @@
 import { supabase, type WorkflowColumn, type WorkflowCard, type Contact, type Invoice, type Note, DEFAULT_WORKFLOW_COLUMNS } from '../lib/supabase';
 import { getActiveWorkspaceId, tryGetActiveWorkspaceId } from '../lib/activeWorkspace';
 import { logCardActivity } from './activityService';
+import { ContactSchema, NoteSchema, WorkflowCardSchema, sanitizeText } from '../lib/validation';
 
 const normalize = (s: string) => s.toLowerCase().replace(/[\s/]+/g, '');
 
@@ -95,6 +96,7 @@ export async function createContact(input: {
   phone?: string | null;
   status?: string;
 }): Promise<Contact> {
+  const validated = ContactSchema.parse(input);
   const wsId = getActiveWorkspaceId();
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData?.user?.id;
@@ -104,11 +106,11 @@ export async function createContact(input: {
     .insert({
       user_id: uid,
       workspace_id: wsId,
-      name: input.name.trim(),
-      company: input.company?.trim() || null,
-      email: input.email?.trim() || null,
-      phone: input.phone?.trim() || null,
-      status: input.status || 'Lead',
+      name: validated.name,
+      company: validated.company || null,
+      email: validated.email || null,
+      phone: validated.phone || null,
+      status: validated.status || 'Lead',
     })
     .select('*')
     .single();
@@ -141,13 +143,14 @@ export async function getNotesForContact(contactId: string): Promise<Note[]> {
 }
 
 export async function addNoteForContact(contactId: string, body: string): Promise<Note> {
+  const validated = NoteSchema.parse({ contact_id: contactId, body });
   const wsId = getActiveWorkspaceId();
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData?.user?.id;
   if (!uid) throw new Error('Not authenticated');
   const { data, error } = await supabase
     .from('notes')
-    .insert({ user_id: uid, workspace_id: wsId, contact_id: contactId, body: body.trim() })
+    .insert({ user_id: uid, workspace_id: wsId, contact_id: contactId, body: validated.body })
     .select('*')
     .single();
   if (error) throw error;
@@ -166,6 +169,16 @@ export type WorkflowCardInput = {
 };
 
 export async function createWorkflowCard(input: WorkflowCardInput): Promise<void> {
+  const validated = WorkflowCardSchema.parse({
+    title: input.title || 'Client',
+    contact_id: input.contact_id,
+    column_id: input.column_id,
+    priority: input.priority || 'medium',
+    status_note: input.status_note || null,
+    due_date: input.due_date || null,
+    assignee_name: input.assignee_name || null,
+  });
+
   const wsId = getActiveWorkspaceId();
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData?.user?.id;
@@ -173,7 +186,7 @@ export async function createWorkflowCard(input: WorkflowCardInput): Promise<void
   const { data: maxRow } = await supabase
     .from('workflow_cards')
     .select('position')
-    .eq('column_id', input.column_id)
+    .eq('column_id', validated.column_id)
     .order('position', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -181,13 +194,13 @@ export async function createWorkflowCard(input: WorkflowCardInput): Promise<void
   const { data: inserted, error } = await supabase.from('workflow_cards').insert({
     user_id: uid,
     workspace_id: wsId,
-    column_id: input.column_id,
-    title: (input.title ?? '').trim() || 'Client',
-    contact_id: input.contact_id,
-    status_note: input.status_note?.trim() || null,
-    due_date: input.due_date || null,
-    assignee_name: input.assignee_name?.trim() || null,
-    priority: input.priority,
+    column_id: validated.column_id,
+    title: validated.title,
+    contact_id: validated.contact_id,
+    status_note: validated.status_note || null,
+    due_date: validated.due_date || null,
+    assignee_name: validated.assignee_name || null,
+    priority: validated.priority,
     position: nextPosition,
     moved_at: input.moved_at ?? new Date().toISOString(),
   }).select('*').single();
@@ -217,10 +230,19 @@ export type WorkflowCardUpdate = Partial<{
 }>;
 
 export async function updateWorkflowCard(cardId: string, updates: WorkflowCardUpdate): Promise<void> {
+  const sanitizedUpdates: WorkflowCardUpdate = { ...updates };
+  if (sanitizedUpdates.title !== undefined) sanitizedUpdates.title = sanitizeText(sanitizedUpdates.title);
+  if (sanitizedUpdates.status_note !== undefined && sanitizedUpdates.status_note !== null) {
+    sanitizedUpdates.status_note = sanitizeText(sanitizedUpdates.status_note);
+  }
+  if (sanitizedUpdates.assignee_name !== undefined && sanitizedUpdates.assignee_name !== null) {
+    sanitizedUpdates.assignee_name = sanitizeText(sanitizedUpdates.assignee_name);
+  }
+
   // Fetch old card info to log specific field changes
   const { data: oldCard } = await supabase.from('workflow_cards').select('*').eq('id', cardId).maybeSingle();
 
-  const { error } = await supabase.from('workflow_cards').update(updates).eq('id', cardId);
+  const { error } = await supabase.from('workflow_cards').update(sanitizedUpdates).eq('id', cardId);
   if (error) throw error;
 
   if (oldCard) {

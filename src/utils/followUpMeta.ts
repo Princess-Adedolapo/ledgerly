@@ -102,6 +102,15 @@ export function getFollowUpStatusInfo(dueDateStr: string | null, completed = fal
   }
 
   const due = new Date(dueDateStr);
+  if (isNaN(due.getTime())) {
+    return {
+      status: 'none',
+      label: 'No follow-up',
+      badgeClass: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+      daysDiff: 999,
+    };
+  }
+
   const now = new Date();
 
   // Reset time portions for pure date comparison

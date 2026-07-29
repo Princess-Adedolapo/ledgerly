@@ -114,7 +114,7 @@ export type Invoice = {
   user_id: string;
   workspace_id: string;
   amount: number;
-  status: 'pending' | 'paid' | 'overdue';
+  status: 'pending' | 'paid' | 'overdue' | 'draft' | 'proposal' | 'approved';
   currency_code: string;
   created_at: string;
   customer_name: string | null;
@@ -124,6 +124,25 @@ export type Invoice = {
   tax_rate: number;
   discount: number;
   total_label_override: 'due' | 'paid' | null;
+  document_type?: 'invoice' | 'proposal' | 'quote';
+  sender_info?: {
+    name?: string;
+    tagline?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    website?: string;
+  };
+  line_items?: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
+  signature_data?: string | null;
+  signed_at?: string | null;
+  signer_name?: string | null;
+  signer_email?: string | null;
 };
 
 

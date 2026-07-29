@@ -17,6 +17,8 @@ import Settings from './pages/Settings';
 import Invoices from './pages/Invoices';
 import EmailComposer from './components/email/EmailComposer';
 import AcceptInvitePage from './pages/AcceptInvitePage';
+import ClientPortalPage from './pages/ClientPortalPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import { LayoutDashboard } from 'lucide-react';
 
 
@@ -49,7 +51,21 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/invite/:token" element={<AcceptInvitePage />} />
+      <Route path="/portal/invoice/:id" element={<ClientPortalPage />} />
+      <Route path="/portal/share/:id" element={<ClientPortalPage />} />
+      <Route path="/portal/proposal/:id" element={<ClientPortalPage />} />
+      <Route path="/portal/quote/:id" element={<ClientPortalPage />} />
+      <Route path="/portal/:docType/:id" element={<ClientPortalPage />} />
+      <Route path="/portal/:id" element={<ClientPortalPage />} />
+      <Route path="/portal" element={<ClientPortalPage />} />
+      <Route path="/share/invoice/:id" element={<ClientPortalPage />} />
+      <Route path="/share/proposal/:id" element={<ClientPortalPage />} />
+      <Route path="/share/quote/:id" element={<ClientPortalPage />} />
+      <Route path="/share/:docType/:id" element={<ClientPortalPage />} />
+      <Route path="/share/:id" element={<ClientPortalPage />} />
+      <Route path="/share" element={<ClientPortalPage />} />
       <Route
         path="/auth"
         element={
@@ -70,6 +86,7 @@ function AppRoutes() {
         <Route path="/contacts/:id" element={<ContactDetail />} />
         <Route path="/workflow" element={<WorkflowBoard />} />
         <Route path="/invoices" element={<Invoices />} />
+        <Route path="/invoices/*" element={<Navigate to="/invoices" replace />} />
         <Route path="/email" element={<EmailComposer />} />
         <Route path="/settings" element={<Settings />} />
       </Route>

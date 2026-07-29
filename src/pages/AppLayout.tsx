@@ -5,7 +5,7 @@ import { useWorkspace } from '../lib/workspace';
 import { useUserPreferences } from '../lib/userPreferences';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { WorkspaceSwitcher } from '../components/workspace/WorkspaceSwitcher';
-import { LayoutDashboard, Users, KanbanSquare, Settings, LogOut, Menu, X, FileText, Mail } from 'lucide-react';
+import { LayoutDashboard, Users, KanbanSquare, Settings, LogOut, Menu, X, FileText, Mail, ShieldCheck } from 'lucide-react';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -73,12 +73,21 @@ function SidebarContent({
         <div className="flex items-center justify-between px-3">
           <button
             onClick={onSignOut}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all"
+            className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5" />
             Sign Out
           </button>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <NavLink
+              to="/privacy"
+              title="Privacy Policy"
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+            >
+              <ShieldCheck className="w-4 h-4" />
+            </NavLink>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </>

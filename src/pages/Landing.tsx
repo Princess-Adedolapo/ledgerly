@@ -1074,6 +1074,9 @@ export default function Landing() {
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 text-sm text-muted md:flex-row">
             <p>© {new Date().getFullYear()} Ledgerly. Built for tiny teams.</p>
             <div className="flex items-center gap-5">
+              <Link to="/privacy" className="transition-colors duration-300 hover:text-ink font-medium">
+                Privacy Policy
+              </Link>
               <Link to="/auth" className="transition-colors duration-300 hover:text-ink">
                 Sign in
               </Link>

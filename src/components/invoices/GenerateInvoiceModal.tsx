@@ -6,12 +6,20 @@ import { Button } from '../ui';
 import { useWorkspace } from '../../lib/workspace';
 import { useUserPreferences } from '../../lib/userPreferences';
 import { formatCurrency } from '../../lib/currency';
+import { getErrorMessage } from '../../lib/errorUtils';
 
 export interface LineItem {
   id: string;
   description: string;
   quantity: number;
   unitPrice: number;
+}
+
+export interface RawLineItem {
+  id: string;
+  description: string;
+  quantity: number | string;
+  unitPrice: number | string;
 }
 
 export interface InvoiceData {
@@ -26,6 +34,8 @@ export interface InvoiceData {
   discount: number;
   total: number;
   currencyCode: string;
+  documentType: 'invoice' | 'proposal' | 'quote';
+  senderInfo?: Record<string, string>;
 }
 
 function generateInvoiceNumber(): string {
@@ -33,7 +43,7 @@ function generateInvoiceNumber(): string {
 }
 
 let lineItemIdCounter = 0;
-function makeLineItem(): LineItem {
+function makeLineItem(): RawLineItem {
   return { id: `li-${++lineItemIdCounter}`, description: '', quantity: 1, unitPrice: 0 };
 }
 
@@ -77,13 +87,14 @@ export function GenerateInvoiceModal({
   }, [open, currencyCode, businessName, businessTagline, initialCustomerName]);
 
   const fmt = (v: number) => formatCurrency(v, invoiceCurrency, currencyDisplayMode, 2);
+  const [documentType, setDocumentType] = useState<'invoice' | 'proposal' | 'quote'>('invoice');
   const [invoiceNumber] = useState(generateInvoiceNumber());
   const [customerName, setCustomerName] = useState('');
-  const [lineItems, setLineItems] = useState<LineItem[]>([makeLineItem()]);
+  const [lineItems, setLineItems] = useState<RawLineItem[]>([makeLineItem()]);
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
-  const [taxRate, setTaxRate] = useState<number>(10);
-  const [discount, setDiscount] = useState<number>(0);
+  const [taxRate, setTaxRate] = useState<number | string>(10);
+  const [discount, setDiscount] = useState<number | string>(0);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,20 +111,28 @@ export function GenerateInvoiceModal({
 
   if (!open) return null;
 
-  const subtotal = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
-  const safeTaxRate = Number.isFinite(taxRate) ? Math.max(0, taxRate) : 0;
-  const safeDiscount = Number.isFinite(discount) ? Math.max(0, Math.min(discount, subtotal)) : 0;
+  const getItemQty = (li: RawLineItem) => (typeof li.quantity === 'number' ? li.quantity : parseFloat(li.quantity as string) || 0);
+  const getItemPrice = (li: RawLineItem) => (typeof li.unitPrice === 'number' ? li.unitPrice : parseFloat(li.unitPrice as string) || 0);
+
+  const subtotal = lineItems.reduce((sum, li) => sum + getItemQty(li) * getItemPrice(li), 0);
+  const numTaxRate = typeof taxRate === 'number' ? taxRate : parseFloat(taxRate as string) || 0;
+  const numDiscount = typeof discount === 'number' ? discount : parseFloat(discount as string) || 0;
+
+  const safeTaxRate = Number.isFinite(numTaxRate) ? Math.max(0, numTaxRate) : 0;
+  const safeDiscount = Number.isFinite(numDiscount) ? Math.max(0, Math.min(numDiscount, subtotal)) : 0;
   const taxableBase = Math.max(0, subtotal - safeDiscount);
   const tax = taxableBase * (safeTaxRate / 100);
   const total = taxableBase + tax;
 
-  const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
+  const updateLineItem = (id: string, field: keyof RawLineItem, value: string | number) => {
     setLineItems((prev) =>
-      prev.map((li) =>
-        li.id === id
-          ? { ...li, [field]: field === 'description' ? (value as string) : Number(value) }
-          : li
-      )
+      prev.map((li) => {
+        if (li.id !== id) return li;
+        if (field === 'description') {
+          return { ...li, description: value as string };
+        }
+        return { ...li, [field]: value };
+      })
     );
   };
 
@@ -135,7 +154,14 @@ export function GenerateInvoiceModal({
       await onSave({
         invoiceNumber,
         customerName: customerName.trim(),
-        lineItems: lineItems.filter((li) => li.description.trim()),
+        lineItems: lineItems
+          .filter((li) => li.description.trim())
+          .map((li) => ({
+            id: li.id,
+            description: li.description,
+            quantity: getItemQty(li),
+            unitPrice: getItemPrice(li),
+          })),
         dueDate,
         notes: notes.trim(),
         subtotal,
@@ -144,6 +170,15 @@ export function GenerateInvoiceModal({
         discount: safeDiscount,
         total,
         currencyCode: invoiceCurrency,
+        documentType,
+        senderInfo: {
+          name: senderName || businessName || 'Ledgerly Workspace',
+          tagline: senderTagline || businessTagline || '',
+          address: senderAddress || '',
+          phone: senderPhone || '',
+          email: senderEmail || '',
+          website: senderWebsite || '',
+        },
       });
       // Reset form
       setCustomerName('');
@@ -153,7 +188,7 @@ export function GenerateInvoiceModal({
       setDiscount(0);
       setTaxRate(10);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save invoice');
+      setError(getErrorMessage(err, 'Failed to save document. Please verify your input details and try again.'));
     } finally {
       setSaving(false);
     }
@@ -177,9 +212,9 @@ export function GenerateInvoiceModal({
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`invoice_${invoiceNumber}.pdf`);
+      pdf.save(`${documentType}_${invoiceNumber}.pdf`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate PDF');
+      setError(getErrorMessage(err, 'Failed to generate PDF document.'));
     } finally {
       setDownloading(false);
     }
@@ -194,7 +229,9 @@ export function GenerateInvoiceModal({
       <div className="relative w-full max-w-5xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl max-h-[92vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Generate Invoice</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Generate {documentType === 'proposal' ? 'Proposal' : documentType === 'quote' ? 'Quote' : 'Invoice'}
+          </h2>
           <button onClick={onClose} aria-label="Close modal" className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -301,7 +338,7 @@ export function GenerateInvoiceModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Customer Name</label>
                   {contacts.length > 0 ? (
@@ -321,6 +358,18 @@ export function GenerateInvoiceModal({
                       className={inputBase}
                     />
                   )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Doc Type</label>
+                  <select
+                    value={documentType}
+                    onChange={(e) => setDocumentType(e.target.value as 'invoice' | 'proposal' | 'quote')}
+                    className={inputBase}
+                  >
+                    <option value="invoice">Invoice</option>
+                    <option value="proposal">Proposal</option>
+                    <option value="quote">Quote</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Currency</label>
@@ -355,6 +404,7 @@ export function GenerateInvoiceModal({
                         value={li.quantity}
                         min={1}
                         onChange={(e) => updateLineItem(li.id, 'quantity', e.target.value)}
+                        onFocus={(e) => e.target.select()}
                         placeholder="Qty"
                         className="w-16 px-2 py-2 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-violet-500/50"
                       />
@@ -364,6 +414,7 @@ export function GenerateInvoiceModal({
                         min={0}
                         step="0.01"
                         onChange={(e) => updateLineItem(li.id, 'unitPrice', e.target.value)}
+                        onFocus={(e) => e.target.select()}
                         placeholder="Price"
                         className="w-20 px-2 py-2 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-violet-500/50"
                       />
@@ -396,7 +447,8 @@ export function GenerateInvoiceModal({
                     value={taxRate}
                     min={0}
                     step="0.1"
-                    onChange={(e) => setTaxRate(Number(e.target.value))}
+                    onChange={(e) => setTaxRate(e.target.value)}
+                    onFocus={(e) => e.target.select()}
                     placeholder="10"
                     className={inputBase}
                   />
@@ -410,7 +462,8 @@ export function GenerateInvoiceModal({
                     value={discount}
                     min={0}
                     step="0.01"
-                    onChange={(e) => setDiscount(Number(e.target.value))}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    onFocus={(e) => e.target.select()}
                     placeholder="0"
                     className={inputBase}
                   />
@@ -441,7 +494,9 @@ export function GenerateInvoiceModal({
 
             {/* Right panel: Live preview — Option A (Corporate Slate) */}
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Live Invoice Preview (Corporate Slate)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Live {documentType === 'proposal' ? 'Proposal' : documentType === 'quote' ? 'Quote' : 'Invoice'} Preview (Corporate Slate)
+              </label>
               <div
                 ref={previewRef}
                 className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col"
@@ -501,10 +556,10 @@ export function GenerateInvoiceModal({
                         </div>
                       </div>
 
-                      {/* Invoice Identity */}
+                      {/* Document Identity */}
                       <div className="md:text-right flex flex-row md:flex-col justify-between md:justify-start items-center md:items-end shrink-0">
                         <div>
-                          <p className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase leading-none">INVOICE</p>
+                          <p className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase leading-none">{documentType.toUpperCase()}</p>
                           <p className="text-sm text-slate-700 font-mono font-semibold mt-1 bg-slate-50 px-2 py-1 rounded border border-slate-100">{invoiceNumber}</p>
                         </div>
                       </div>
@@ -603,7 +658,7 @@ export function GenerateInvoiceModal({
 
                     <div className="text-center pt-6 border-t border-slate-100 mt-6">
                       <p className="text-xs font-semibold italic text-slate-400">Thank you for your business!</p>
-                      <p className="text-[9px] text-slate-300 font-mono mt-1 uppercase tracking-widest">{senderName || businessName} · Secured Invoice System</p>
+                      <p className="text-[9px] text-slate-300 font-mono mt-1 uppercase tracking-widest">{senderName || businessName} · Secured {documentType === 'proposal' ? 'Proposal' : documentType === 'quote' ? 'Quote' : 'Invoice'} System</p>
                     </div>
                   </div>
                 </div>
@@ -617,7 +672,7 @@ export function GenerateInvoiceModal({
           {error && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>}
           <div className="flex gap-3">
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving...' : 'Save Invoice'}
+              {saving ? 'Saving...' : `Save ${documentType === 'proposal' ? 'Proposal' : documentType === 'quote' ? 'Quote' : 'Invoice'}`}
             </Button>
             <Button variant="secondary" onClick={handleDownloadPDF} disabled={downloading}>
               <span className="flex items-center gap-2">

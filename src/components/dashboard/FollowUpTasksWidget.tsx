@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import { Card, Button } from '../ui';
 import { Calendar, CheckCircle2, Bell, CalendarDays } from 'lucide-react';
 import { getAllContactFollowUps, getFollowUpStatusInfo, saveContactFollowUp } from '../../utils/followUpMeta';
-import { getWorkflowCards, getContacts } from '../../services/workflowService';
+import { getWorkflowCards, getContacts, getWorkflowColumns, updateWorkflowCard } from '../../services/workflowService';
 import { downloadBatchICSFile } from '../../utils/ics';
 import { FollowUpSchedulerModal } from '../followup/FollowUpSchedulerModal';
 import { useToast } from '../../contexts/ToastContext';
-import type { Contact, WorkflowCard } from '../../lib/supabase';
+import type { Contact, WorkflowCard, WorkflowColumn } from '../../lib/supabase';
 
 type TaskItem = {
   id: string;
@@ -34,13 +34,29 @@ export function FollowUpTasksWidget() {
   const loadTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const [contactsList, workflowCardsList] = await Promise.all([
+      const [contactsList, workflowCardsList, workflowColumnsList] = await Promise.all([
         getContacts().catch(() => [] as Contact[]),
         getWorkflowCards().catch(() => [] as WorkflowCard[]),
+        getWorkflowColumns().catch(() => [] as WorkflowColumn[]),
       ]);
 
       const cMap = new Map<string, Contact>();
       contactsList.forEach((c) => cMap.set(c.id, c));
+
+      // Build set of resolved / completed column IDs
+      const resolvedColIds = new Set<string>();
+      workflowColumnsList.forEach((col) => {
+        const norm = col.name.toLowerCase().replace(/[\s/]+/g, '');
+        if (
+          norm.includes('resolved') ||
+          norm.includes('completed') ||
+          norm.includes('done') ||
+          norm.includes('closed') ||
+          norm.includes('won')
+        ) {
+          resolvedColIds.add(col.id);
+        }
+      });
 
       const aggregated: TaskItem[] = [];
 
@@ -64,6 +80,16 @@ export function FollowUpTasksWidget() {
       // 2. Workflow card due dates
       workflowCardsList.forEach((card) => {
         if (!card.due_date) return;
+
+        // Skip if card is in a resolved/completed column
+        if (resolvedColIds.has(card.column_id)) return;
+
+        // Skip if status note indicates auto-resolved or resolved/completed
+        if (card.status_note && /auto-resolved|resolved|completed/i.test(card.status_note)) return;
+
+        // Skip if card was locally marked as completed
+        if (localStorage.getItem(`completed_workflow_task_${card.id}`) === 'true') return;
+
         const contact = card.contact_id ? cMap.get(card.contact_id) : null;
         aggregated.push({
           id: `workflow_${card.id}`,
@@ -90,6 +116,19 @@ export function FollowUpTasksWidget() {
 
   useEffect(() => {
     loadTasks();
+
+    const handleRefresh = () => loadTasks();
+    window.addEventListener('workflow-card-updated', handleRefresh);
+    window.addEventListener('invoice-updated', handleRefresh);
+    window.addEventListener('focus', handleRefresh);
+    window.addEventListener('storage', handleRefresh);
+
+    return () => {
+      window.removeEventListener('workflow-card-updated', handleRefresh);
+      window.removeEventListener('invoice-updated', handleRefresh);
+      window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('storage', handleRefresh);
+    };
   }, [loadTasks]);
 
   const filteredItems = useMemo(() => {
@@ -117,7 +156,7 @@ export function FollowUpTasksWidget() {
     return { total: items.length, overdue, today, upcoming };
   }, [items]);
 
-  const handleToggleComplete = (item: TaskItem) => {
+  const handleToggleComplete = async (item: TaskItem) => {
     if (item.source === 'contact' && item.contactId) {
       saveContactFollowUp(item.contactId, {
         dueDate: item.dueDate,
@@ -125,6 +164,15 @@ export function FollowUpTasksWidget() {
         completed: true,
       });
       addToast('success', 'Follow-up Completed', `Marked follow-up for ${item.title} as completed.`);
+      loadTasks();
+    } else if (item.source === 'workflow' && item.workflowCardId) {
+      localStorage.setItem(`completed_workflow_task_${item.workflowCardId}`, 'true');
+      try {
+        await updateWorkflowCard(item.workflowCardId, { due_date: null });
+      } catch (err) {
+        console.warn('Failed to clear due date on workflow card:', err);
+      }
+      addToast('success', 'Task Completed', `Marked task for "${item.title}" as completed.`);
       loadTasks();
     }
   };
@@ -334,6 +382,8 @@ export function FollowUpTasksWidget() {
           }}
           contactId={selectedTask.contactId}
           contactName={selectedTask.title}
+          workflowCardId={selectedTask.workflowCardId}
+          title={selectedTask.title}
           initialDueDate={selectedTask.dueDate}
           initialNote={selectedTask.note}
           initialCompleted={selectedTask.completed}

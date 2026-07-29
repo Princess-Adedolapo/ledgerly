@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { supabase, type Workspace, type ThemeMode } from '../lib/supabase';
 import { setActiveWorkspaceId, tryGetActiveWorkspaceId, getActiveWorkspaceId } from '../lib/activeWorkspace';
+import { sanitizeText } from '../lib/validation';
 
 async function requireFreshSession(): Promise<Session> {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -83,7 +84,7 @@ export async function ensureAtLeastOneWorkspace(): Promise<Workspace[]> {
 
 /** Creates a workspace, adds the current user as Owner, and returns it. */
 export async function createWorkspace(name: string): Promise<Workspace> {
-  const clean = name.trim() || 'My Workspace';
+  const clean = sanitizeText(name) || 'My Workspace';
   await requireFreshSession();
 
   // 1. Try to invoke the RPC function first
@@ -157,11 +158,13 @@ async function updateActiveWorkspace(patch: WorkspacePatch): Promise<void> {
 }
 
 export async function updateBusinessName(name: string): Promise<void> {
-  await updateActiveWorkspace({ name });
+  const cleanName = sanitizeText(name);
+  if (!cleanName) throw new Error('Workspace name cannot be empty');
+  await updateActiveWorkspace({ name: cleanName });
 }
 
 export async function updateBusinessTagline(tagline: string): Promise<void> {
-  await updateActiveWorkspace({ business_tagline: tagline });
+  await updateActiveWorkspace({ business_tagline: sanitizeText(tagline) });
 }
 
 export async function updateTheme(theme: ThemeMode): Promise<void> {
@@ -169,7 +172,8 @@ export async function updateTheme(theme: ThemeMode): Promise<void> {
 }
 
 export async function updateWeeklySalesTarget(target: number): Promise<void> {
-  await updateActiveWorkspace({ weekly_sales_target: target });
+  const validTarget = Math.max(0, Number(target) || 0);
+  await updateActiveWorkspace({ weekly_sales_target: validTarget });
 }
 
 export async function deleteWorkspace(id: string): Promise<void> {

@@ -12,6 +12,7 @@ import { LogOut, User, Shield, Bell, Building2, Palette, Check, Globe, Type, Tra
 import { supabase } from '../lib/supabase';
 import { TeamTab } from '../components/workspace/TeamTab';
 import { DeleteWorkspaceSection } from '../components/settings/DeleteWorkspaceSection';
+import { getErrorMessage } from '../lib/errorUtils';
 
 const DISPLAY_NAME_REGEX = /^[a-zA-Z0-9 -]+$/;
 
@@ -81,7 +82,7 @@ export default function Settings() {
       setDeleteWorkspaceOpen(false);
       setDeleteWorkspaceConfirm('');
     } catch (err) {
-      setDeleteWorkspaceError(err instanceof Error ? err.message : 'Failed to delete workspace');
+      setDeleteWorkspaceError(getErrorMessage(err, 'Failed to delete workspace. Please try again.'));
     } finally {
       setDeletingWorkspace(false);
     }
@@ -110,7 +111,8 @@ export default function Settings() {
     });
     if (error || (data && (data as { error?: string }).error)) {
       setDeleting(false);
-      setDeleteError((data as { error?: string })?.error ?? error?.message ?? 'Failed to delete account');
+      const raw = (data as { error?: string })?.error ?? error;
+      setDeleteError(getErrorMessage(raw, 'Failed to delete account. Please verify credentials and try again.'));
       return;
     }
     await supabase.auth.signOut();

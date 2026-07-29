@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button } from '../ui';
 import { Calendar, CheckCircle2, Download, ExternalLink, Trash2, Bell } from 'lucide-react';
 import { getPresetDate, getFollowUpStatusInfo, saveContactFollowUp, deleteContactFollowUp, getContactFollowUp } from '../../utils/followUpMeta';
+import { updateWorkflowCard } from '../../services/workflowService';
 import { downloadICSFile, getGoogleCalendarUrl, getOutlookCalendarUrl } from '../../utils/ics';
 import { useToast } from '../../contexts/ToastContext';
 import { useActivityLog } from '../../contexts/ActivityLogContext';
@@ -26,6 +27,7 @@ export function FollowUpSchedulerModal({
   contactId,
   contactName,
   contactEmail,
+  workflowCardId,
   title,
   initialDueDate,
   initialNote,
@@ -66,7 +68,7 @@ export function FollowUpSchedulerModal({
     setCompleted(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!dueDate) {
       addToast('error', 'Date required', 'Please select a date and time for the follow-up reminder.');
       return;
@@ -82,6 +84,28 @@ export function FollowUpSchedulerModal({
       saveContactFollowUp(contactId, payload);
     }
 
+    if (workflowCardId) {
+      if (completed) {
+        localStorage.setItem(`completed_workflow_task_${workflowCardId}`, 'true');
+        try {
+          await updateWorkflowCard(workflowCardId, { due_date: null });
+        } catch (e) {
+          console.warn('Failed to update workflow card:', e);
+        }
+      } else {
+        localStorage.removeItem(`completed_workflow_task_${workflowCardId}`);
+        try {
+          await updateWorkflowCard(workflowCardId, {
+            due_date: new Date(dueDate).toISOString(),
+            status_note: note.trim() || null,
+          });
+        } catch (e) {
+          console.warn('Failed to update workflow card:', e);
+        }
+      }
+      window.dispatchEvent(new CustomEvent('workflow-card-updated'));
+    }
+
     logActivity('Added Follow-up Reminder', `Set follow-up for ${subjectName} on ${new Date(dueDate).toLocaleString()}`, 'contact');
     addToast('success', 'Follow-up Saved', `Follow-up reminder set for ${subjectName}`);
 
@@ -91,10 +115,21 @@ export function FollowUpSchedulerModal({
     onClose();
   };
 
-  const handleRemove = () => {
+  const handleRemove = async () => {
     if (contactId) {
       deleteContactFollowUp(contactId);
     }
+
+    if (workflowCardId) {
+      localStorage.setItem(`completed_workflow_task_${workflowCardId}`, 'true');
+      try {
+        await updateWorkflowCard(workflowCardId, { due_date: null });
+      } catch (e) {
+        console.warn('Failed to clear workflow card due_date:', e);
+      }
+      window.dispatchEvent(new CustomEvent('workflow-card-updated'));
+    }
+
     addToast('info', 'Follow-up Cleared', `Follow-up reminder removed for ${subjectName}`);
     if (onSaved) {
       onSaved({ dueDate: null, note: '', completed: false });

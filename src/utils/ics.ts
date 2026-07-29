@@ -10,16 +10,18 @@ export type CalendarEvent = {
 /**
  * Format date to YYYYMMDDTHHMMSSZ for iCalendar format
  */
-function formatDateToICS(date: Date): string {
+function formatDateToICS(dateInput: Date | string | number): string {
+  const date = new Date(dateInput);
+  const validDate = isNaN(date.getTime()) ? new Date() : date;
   const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
   return (
-    date.getUTCFullYear() +
-    pad(date.getUTCMonth() + 1) +
-    pad(date.getUTCDate()) +
+    validDate.getUTCFullYear() +
+    pad(validDate.getUTCMonth() + 1) +
+    pad(validDate.getUTCDate()) +
     'T' +
-    pad(date.getUTCHours()) +
-    pad(date.getUTCMinutes()) +
-    pad(date.getUTCSeconds()) +
+    pad(validDate.getUTCHours()) +
+    pad(validDate.getUTCMinutes()) +
+    pad(validDate.getUTCSeconds()) +
     'Z'
   );
 }
@@ -28,16 +30,20 @@ function formatDateToICS(date: Date): string {
  * Escape special characters in iCalendar text strings
  */
 function escapeICSText(str: string): string {
-  return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+  return (str || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
 }
 
 /**
  * Download a single event as a .ics file
  */
 export function downloadICSFile(event: CalendarEvent, filename?: string): void {
-  const start = new Date(event.startDate);
-  // Default end time to 30 minutes after start time if not provided
-  const end = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 30 * 60 * 1000);
+  if (!event || typeof event !== 'object') return;
+  const rawStart = new Date(event.startDate);
+  const start = isNaN(rawStart.getTime()) ? new Date() : rawStart;
+  const rawEnd = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 30 * 60 * 1000);
+  const end = isNaN(rawEnd.getTime()) ? new Date(start.getTime() + 30 * 60 * 1000) : rawEnd;
+
+  const titleText = event.title || 'Reminder';
 
   const icsContent = [
     'BEGIN:VCALENDAR',
@@ -50,7 +56,7 @@ export function downloadICSFile(event: CalendarEvent, filename?: string): void {
     `DTSTAMP:${formatDateToICS(new Date())}`,
     `DTSTART:${formatDateToICS(start)}`,
     `DTEND:${formatDateToICS(end)}`,
-    `SUMMARY:${escapeICSText(event.title)}`,
+    `SUMMARY:${escapeICSText(titleText)}`,
     event.description ? `DESCRIPTION:${escapeICSText(event.description)}` : '',
     event.location ? `LOCATION:${escapeICSText(event.location)}` : '',
     'STATUS:CONFIRMED',
@@ -64,7 +70,7 @@ export function downloadICSFile(event: CalendarEvent, filename?: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = filename || `${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_reminder.ics`;
+  link.download = filename || `${titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_reminder.ics`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -75,11 +81,14 @@ export function downloadICSFile(event: CalendarEvent, filename?: string): void {
  * Download multiple events into a single .ics calendar file
  */
 export function downloadBatchICSFile(events: CalendarEvent[], filename?: string): void {
-  if (!events.length) return;
+  if (!Array.isArray(events) || !events.length) return;
 
   const eventBlocks = events.map((event, idx) => {
-    const start = new Date(event.startDate);
-    const end = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 30 * 60 * 1000);
+    const rawStart = new Date(event.startDate);
+    const start = isNaN(rawStart.getTime()) ? new Date() : rawStart;
+    const rawEnd = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 30 * 60 * 1000);
+    const end = isNaN(rawEnd.getTime()) ? new Date(start.getTime() + 30 * 60 * 1000) : rawEnd;
+    const titleText = event.title || 'Reminder';
 
     return [
       'BEGIN:VEVENT',
@@ -87,7 +96,7 @@ export function downloadBatchICSFile(events: CalendarEvent[], filename?: string)
       `DTSTAMP:${formatDateToICS(new Date())}`,
       `DTSTART:${formatDateToICS(start)}`,
       `DTEND:${formatDateToICS(end)}`,
-      `SUMMARY:${escapeICSText(event.title)}`,
+      `SUMMARY:${escapeICSText(titleText)}`,
       event.description ? `DESCRIPTION:${escapeICSText(event.description)}` : '',
       event.location ? `LOCATION:${escapeICSText(event.location)}` : '',
       'STATUS:CONFIRMED',
@@ -122,14 +131,17 @@ export function downloadBatchICSFile(events: CalendarEvent[], filename?: string)
  * Generate Google Calendar web add link
  */
 export function getGoogleCalendarUrl(event: CalendarEvent): string {
-  const start = new Date(event.startDate);
-  const end = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 30 * 60 * 1000);
+  if (!event || typeof event !== 'object') return '#';
+  const rawStart = new Date(event.startDate);
+  const start = isNaN(rawStart.getTime()) ? new Date() : rawStart;
+  const rawEnd = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 30 * 60 * 1000);
+  const end = isNaN(rawEnd.getTime()) ? new Date(start.getTime() + 30 * 60 * 1000) : rawEnd;
 
   const datesParam = `${formatDateToICS(start)}/${formatDateToICS(end)}`;
 
   const params = new URLSearchParams({
     action: 'TEMPLATE',
-    text: event.title,
+    text: event.title || 'Follow-up',
     dates: datesParam,
     details: event.description || '',
     location: event.location || '',
@@ -142,13 +154,16 @@ export function getGoogleCalendarUrl(event: CalendarEvent): string {
  * Generate Outlook Web Calendar add link
  */
 export function getOutlookCalendarUrl(event: CalendarEvent): string {
-  const start = new Date(event.startDate);
-  const end = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 30 * 60 * 1000);
+  if (!event || typeof event !== 'object') return '#';
+  const rawStart = new Date(event.startDate);
+  const start = isNaN(rawStart.getTime()) ? new Date() : rawStart;
+  const rawEnd = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 30 * 60 * 1000);
+  const end = isNaN(rawEnd.getTime()) ? new Date(start.getTime() + 30 * 60 * 1000) : rawEnd;
 
   const params = new URLSearchParams({
     path: '/calendar/action/compose',
     rru: 'addevent',
-    subject: event.title,
+    subject: event.title || 'Follow-up',
     startdt: start.toISOString(),
     enddt: end.toISOString(),
     body: event.description || '',

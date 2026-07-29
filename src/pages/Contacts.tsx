@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, type Contact, CONTACT_STATUSES } from '../lib/supabase';
+import { useDebounce } from '../hooks/useDebounce';
 
 const DESCRIPTION_TYPES = [
   'Other / Uncategorized',
@@ -39,6 +40,7 @@ import { getContactTags, getContactCustomFields, DEFAULT_SUGGESTED_TAGS } from '
 import { getContactFollowUp, getFollowUpStatusInfo, getAllContactFollowUps } from '../utils/followUpMeta';
 import { downloadBatchICSFile } from '../utils/ics';
 import { FollowUpSchedulerModal } from '../components/followup/FollowUpSchedulerModal';
+import { getErrorMessage } from '../lib/errorUtils';
 
 function isMissingColumnError(err: { message?: string; code?: string } | null | undefined): boolean {
   if (!err) return false;
@@ -59,6 +61,7 @@ export default function Contacts() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 250);
   const [statusFilter, setStatusFilter] = useState('All');
   const [tagFilter, setTagFilter] = useState('All');
   const [followUpFilter, setFollowUpFilter] = useState('All');
@@ -147,18 +150,19 @@ export default function Contacts() {
     const contactTags = getContactTags(c.id);
     const customFields = getContactCustomFields(c.id);
 
+    const query = debouncedSearch.trim().toLowerCase();
     const matchesSearch =
-      !search ||
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.email ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      (c.company ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      (c.description_type ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      (c.description_note ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      contactTags.some((t) => t.toLowerCase().includes(search.toLowerCase())) ||
+      !query ||
+      c.name.toLowerCase().includes(query) ||
+      (c.email ?? '').toLowerCase().includes(query) ||
+      (c.company ?? '').toLowerCase().includes(query) ||
+      (c.description_type ?? '').toLowerCase().includes(query) ||
+      (c.description_note ?? '').toLowerCase().includes(query) ||
+      contactTags.some((t) => t.toLowerCase().includes(query)) ||
       customFields.some(
         (f) =>
-          f.key.toLowerCase().includes(search.toLowerCase()) ||
-          f.value.toLowerCase().includes(search.toLowerCase())
+          f.key.toLowerCase().includes(query) ||
+          f.value.toLowerCase().includes(query)
       );
 
     const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
@@ -300,12 +304,13 @@ export default function Contacts() {
       }
 
       if (updateError) {
-        currentError = updateError.message;
-        setError(updateError.message);
+        const safeMsg = getErrorMessage(updateError, 'Unable to update contact details. Please check your entries and try again.');
+        currentError = safeMsg;
+        setError(safeMsg);
       }
     } else {
       if (!workspaceId) {
-        setError('No active workspace');
+        setError('No active workspace selected.');
         setSaving(false);
         return;
       }
@@ -357,8 +362,9 @@ export default function Contacts() {
       }
 
       if (insertError) {
-        currentError = insertError.message;
-        setError(insertError.message);
+        const safeMsg = getErrorMessage(insertError, 'Unable to create contact. Please try again.');
+        currentError = safeMsg;
+        setError(safeMsg);
       } else if (data) {
         const newContact = data as Contact;
         logActivity('contact', `Contact '${newContact.name}' was registered`, newContact.id);
