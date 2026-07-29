@@ -104,7 +104,68 @@ Ledgerly implements enterprise-grade security standards across the full stack:
 
 ### Local Setup
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/Princess-Adedolapo/ledgerly.git](https://github.com/Princess-Adedolapo/ledgerly.git)
-   cd ledgerly
+```bash
+# Clone the repository
+git clone https://github.com/<your-username>/ledgerly.git
+cd ledgerly
+ 
+# Install dependencies
+npm install
+ 
+# Set up environment variables
+cp .env.example .env
+```
+ 
+### Environment Variables
+ 
+Create a `.env` file with the following:
+ 
+```env
+VITE_SUPABASE_URL=your-supabase-project-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+VITE_PAYSTACK_PUBLIC_KEY=pk_test_your_paystack_public_key
+```
+ 
+> ⚠️ Your Paystack **secret key** should never be added to this file. It belongs only in your Supabase Edge Function secrets:
+> ```bash
+> supabase secrets set PAYSTACK_SECRET_KEY=sk_test_your_secret_key
+> ```
+ 
+### Running Locally
+ 
+```bash
+npm run dev      # Start the dev server
+npm run build    # Production build
+npm run preview  # Preview the production build
+npm run typecheck # Type-check the project
+npm run lint     # Lint the project
+```
+ 
+---
+ 
+## 🗺️ Roadmap
+ 
+- [ ] Recurring/subscription invoicing
+- [ ] Automated overdue-invoice reminder sequences
+- [ ] Two-way email sync
+- [ ] WhatsApp Business API integration for direct sending
+- [ ] Advanced reporting (conversion rates, sales cycle length, team performance)
+- [ ] Role-based permissions beyond Owner
+- [ ] Calendar integration for scheduling
+- [ ] Public API / webhooks for third-party integrations
+---
+ 
+## 📄 License
+ 
+This project is currently proprietary. All rights reserved.
+ 
+---
+ 
+<div align="center">
+Built for African SMBs, agencies, and freelancers — built in public.
+ 
+**[flowledgerly.ai.studio](https://flowledgerly.ai.studio)**
+ 
+</div>
+
+
