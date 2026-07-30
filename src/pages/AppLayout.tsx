@@ -31,7 +31,7 @@ function SidebarContent({
   return (
     <>
       {/* Logo + workspace switcher */}
-      <div className="flex items-center gap-2 px-3 h-16 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex items-center gap-2 px-3 h-16 border-b border-gray-200 dark:border-slate-800">
         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-600/20 shrink-0">
           <LayoutDashboard className="w-5 h-5 text-white" />
         </div>
@@ -49,7 +49,7 @@ function SidebarContent({
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 isActive
                   ? 'bg-violet-600/20 text-violet-600 dark:text-violet-400 border-l-2 border-violet-500'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-800/50'
               }`
             }
           >
@@ -60,20 +60,20 @@ function SidebarContent({
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 border-t border-gray-200 dark:border-gray-800">
+      <div className="px-3 py-4 border-t border-gray-200 dark:border-slate-800">
         <div className="flex items-center gap-3 px-3 py-2 mb-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-500 to-gray-600 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center text-sm font-medium text-white shrink-0">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-sm font-medium text-white shrink-0">
             {(displayName ?? user?.email?.split('@')[0])?.[0]?.toUpperCase() ?? '?'}
           </div>
           <div className="min-w-0">
-            <p className="text-sm text-gray-900 dark:text-gray-100 truncate">{displayName ?? user?.email?.split('@')[0] ?? 'User'}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{user?.email}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{displayName ?? user?.email?.split('@')[0] ?? 'User'}</p>
+            <p className="text-xs text-gray-400 dark:text-slate-400 truncate">{user?.email}</p>
           </div>
         </div>
         <div className="flex items-center justify-between px-3">
           <button
             onClick={onSignOut}
-            className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all"
+            className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all"
           >
             <LogOut className="w-3.5 h-3.5" />
             Sign Out
@@ -82,7 +82,7 @@ function SidebarContent({
             <NavLink
               to="/privacy"
               title="Privacy Policy"
-              className="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+              className="p-2 rounded-lg text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all"
             >
               <ShieldCheck className="w-4 h-4" />
             </NavLink>
@@ -106,23 +106,23 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF] dark:bg-[#0F0E17] flex transition-colors duration-200">
+    <div className="min-h-screen bg-[#F8F7FF] dark:bg-[#0B0F19] flex transition-colors duration-200">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-60 bg-white/95 dark:bg-gray-900/40 backdrop-blur-xl border-r border-purple-100/60 dark:border-gray-800 shrink-0">
+      <aside className="hidden md:flex flex-col w-60 bg-white/95 dark:bg-[#111625] backdrop-blur-xl border-r border-purple-100/60 dark:border-slate-800 shrink-0">
         <SidebarContent onSignOut={handleSignOut} user={user} />
       </aside>
 
       {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white/95 dark:bg-gray-900/80 backdrop-blur-xl border-b border-purple-100/60 dark:border-gray-800 flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white/95 dark:bg-[#111625]/90 backdrop-blur-xl border-b border-purple-100/60 dark:border-slate-800 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-500 flex items-center justify-center">
             <LayoutDashboard className="w-4 h-4 text-white" />
           </div>
-          <span className="text-base font-bold text-gray-900 dark:text-gray-100">{businessName}</span>
+          <span className="text-base font-bold text-gray-900 dark:text-slate-100">{businessName}</span>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+          <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100">
             <Menu className="w-6 h-6" />
           </button>
         </div>
@@ -132,10 +132,10 @@ export default function AppLayout() {
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <aside className="relative w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
-            <div className="flex items-center justify-between px-5 h-16 border-b border-gray-200 dark:border-gray-800">
-              <span className="text-lg font-bold text-gray-900 dark:text-gray-100">Menu</span>
-              <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="text-gray-400 hover:text-gray-900 dark:hover:text-white">
+          <aside className="relative w-64 bg-white dark:bg-[#151C2C] border-r border-gray-200 dark:border-slate-800 flex flex-col">
+            <div className="flex items-center justify-between px-5 h-16 border-b border-gray-200 dark:border-slate-800">
+              <span className="text-lg font-bold text-gray-900 dark:text-slate-100">Menu</span>
+              <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="text-gray-400 hover:text-gray-900 dark:hover:text-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>

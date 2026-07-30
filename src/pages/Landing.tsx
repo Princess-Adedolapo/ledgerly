@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Activity,
   Plus,
+  Star,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { InteractiveFeatureShowcase } from '../components/landing/InteractiveFeatureShowcase';
@@ -534,7 +535,7 @@ export default function Landing() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: easeOut }}
-              className="mb-7 inline-flex items-center gap-3 rounded-full border border-purple-100 dark:border-purple-900/40 bg-purple-50/60 dark:bg-purple-950/40 px-3.5 py-1.5 text-xs font-medium text-slate-600 dark:text-purple-200/90 shadow-xs backdrop-blur-sm"
+              className="mb-7 inline-flex flex-wrap items-center justify-center gap-3 rounded-full border border-purple-100 dark:border-purple-900/40 bg-purple-50/60 dark:bg-purple-950/40 px-4 py-1.5 text-xs font-medium text-slate-700 dark:text-purple-200/90 shadow-xs backdrop-blur-sm"
             >
               <div className="flex -space-x-2 overflow-hidden shrink-0">
                 <img
@@ -553,18 +554,27 @@ export default function Landing() {
                   alt="User Avatar"
                 />
               </div>
-              <span>
-                Trusted by <strong className="font-semibold text-slate-900 dark:text-white">1,000+</strong> agency owners, freelancers, and small businesses
-              </span>
+              <div className="flex items-center gap-1.5">
+                <div className="flex text-amber-400 gap-0.5">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                </div>
+                <span>
+                  Loved by <strong className="font-semibold text-slate-900 dark:text-white">1,000+</strong> business owners & agency leaders
+                </span>
+              </div>
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: easeOut, delay: 0.05 }}
-              className="mx-auto max-w-4xl text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-slate-900 dark:text-white sm:text-5xl md:text-6xl"
+              className="mx-auto max-w-4xl text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-slate-900 dark:text-white sm:text-5xl md:text-6xl font-['Plus_Jakarta_Sans',sans-serif]"
             >
               Run your client work like a{' '}
-              <span className="text-violet-600 dark:text-violet-400">proper business</span>.
+              <span className="text-[#6D5FFA] dark:text-[#8174FF]">proper business</span>.
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 12 }}

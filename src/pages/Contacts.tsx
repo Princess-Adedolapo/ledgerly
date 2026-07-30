@@ -631,21 +631,21 @@ export default function Contacts() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email, or company..."
             aria-label="Search contacts"
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all"
           />
         </div>
         <select
           value={followUpFilter}
           onChange={(e) => setFollowUpFilter(e.target.value)}
           aria-label="Filter by follow-up"
-          className="px-3 py-2.5 bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all font-medium"
+          className="px-3 py-2.5 bg-white dark:bg-[#151C2C] border border-gray-200 dark:border-slate-800 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all font-medium"
         >
           <option value="All">All Follow-ups</option>
           <option value="Needs Follow-up">Needs Follow-up</option>
@@ -656,7 +656,7 @@ export default function Contacts() {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           aria-label="Filter by status"
-          className="px-3 py-2.5 bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+          className="px-3 py-2.5 bg-white dark:bg-[#151C2C] border border-gray-200 dark:border-slate-800 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
         >
           <option value="All">All Statuses</option>
           {CONTACT_STATUSES.map((s) => (
@@ -667,7 +667,7 @@ export default function Contacts() {
           value={tagFilter}
           onChange={(e) => setTagFilter(e.target.value)}
           aria-label="Filter by tag"
-          className="px-3 py-2.5 bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+          className="px-3 py-2.5 bg-white dark:bg-[#151C2C] border border-gray-200 dark:border-slate-800 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
         >
           <option value="All">All Tags</option>
           {DEFAULT_SUGGESTED_TAGS.map((t) => (
@@ -767,24 +767,24 @@ export default function Contacts() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30">
+                    <tr className="border-b border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-[#111625]">
                       <th className="w-10 px-4 py-3 text-center">
                         <input
                           type="checkbox"
                           checked={filtered.length > 0 && selectedIds.size === filtered.length}
                           onChange={toggleSelectAll}
                           title="Select / Deselect all"
-                          className="rounded border-gray-300 dark:border-gray-700 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                          className="rounded border-gray-300 dark:border-slate-700 text-violet-600 focus:ring-violet-500 cursor-pointer"
                         />
                       </th>
-                      <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Name</th>
-                      <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Company</th>
-                      <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Email</th>
-                      <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Phone</th>
-                      <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Follow-up</th>
-                      <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Status</th>
-                      <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Category</th>
-                      <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Description Note</th>
+                      <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Name</th>
+                      <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Company</th>
+                      <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Email</th>
+                      <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Phone</th>
+                      <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Follow-up</th>
+                      <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Status</th>
+                      <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Category</th>
+                      <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Description Note</th>
                       <th className="px-5 py-3"></th>
                     </tr>
                   </thead>
@@ -802,7 +802,7 @@ export default function Contacts() {
                             if (target.closest('input') || target.closest('button') || target.closest('a')) return;
                             navigate(`/contacts/${c.id}`);
                           }}
-                          className={`border-b border-gray-100 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer group ${
+                          className={`border-b border-gray-100 dark:border-slate-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group ${
                             isSelected ? 'bg-violet-500/5 dark:bg-violet-500/10' : ''
                           }`}
                         >
@@ -811,13 +811,13 @@ export default function Contacts() {
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleSelectOne(c.id)}
-                              className="rounded border-gray-300 dark:border-gray-700 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                              className="rounded border-gray-300 dark:border-slate-700 text-violet-600 focus:ring-violet-500 cursor-pointer"
                             />
                           </td>
                           <td className="px-5 py-3">
                             <button
                               onClick={() => navigate(`/contacts/${c.id}`)}
-                              className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-violet-600 dark:hover:text-violet-400 transition-colors text-left block"
+                              className="text-sm font-semibold text-gray-900 dark:text-slate-100 hover:text-violet-600 dark:hover:text-violet-400 transition-colors text-left block"
                             >
                               {getContactDisplayName(c)}
                             </button>
@@ -829,14 +829,14 @@ export default function Contacts() {
                                   </span>
                                 ))}
                                 {tags.length > 3 && (
-                                  <span className="text-[10px] text-gray-400 self-center">+{tags.length - 3}</span>
+                                  <span className="text-[10px] text-gray-400 dark:text-slate-500 self-center">+{tags.length - 3}</span>
                                 )}
                               </div>
                             )}
                           </td>
-                          <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">{c.company || '—'}</td>
-                          <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">{c.email || '—'}</td>
-                          <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">{c.phone || '—'}</td>
+                          <td className="px-5 py-3 text-sm text-gray-500 dark:text-slate-400">{c.company || '—'}</td>
+                          <td className="px-5 py-3 text-sm text-gray-500 dark:text-slate-400">{c.email || '—'}</td>
+                          <td className="px-5 py-3 text-sm text-gray-500 dark:text-slate-400">{c.phone || '—'}</td>
                           <td className="px-5 py-3">
                             {fuStatus ? (
                               <button

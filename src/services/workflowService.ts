@@ -17,6 +17,13 @@ export async function getWorkflowColumns(): Promise<WorkflowColumn[]> {
   return (data ?? []) as WorkflowColumn[];
 }
 
+const LEGACY_NAME_MAP: Record<string, string> = {
+  'onboarding': 'Lead Inflow',
+  'invoicingpending': 'Proposal Sent',
+  'activesupport': 'In Progress',
+  'resolvedcompleted': 'Paid & Closed',
+};
+
 export async function ensureWorkflowColumns(): Promise<WorkflowColumn[]> {
   const wsId = getActiveWorkspaceId();
   const existing = await getWorkflowColumns();
@@ -27,7 +34,11 @@ export async function ensureWorkflowColumns(): Promise<WorkflowColumn[]> {
   for (let i = 0; i < required.length; i++) {
     const name = required[i];
     const key = normalize(name);
-    const match = existing.find((c) => !usedIds.has(c.id) && normalize(c.name) === key);
+    const match = existing.find((c) => {
+      if (usedIds.has(c.id)) return false;
+      const cNorm = normalize(c.name);
+      return cNorm === key || LEGACY_NAME_MAP[cNorm] === name;
+    });
     if (match) {
       usedIds.add(match.id);
       if (match.name !== name || match.position !== i) {

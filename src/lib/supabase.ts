@@ -147,10 +147,10 @@ export type Invoice = {
 
 
 export const DEFAULT_WORKFLOW_COLUMNS = [
-  'Onboarding',
-  'Active Support',
-  'Invoicing Pending',
-  'Resolved / Completed',
+  'Lead Inflow',
+  'Proposal Sent',
+  'In Progress',
+  'Paid & Closed',
 ] as const;
 
 export const CARD_PRIORITIES = ['low', 'medium', 'high'] as const;

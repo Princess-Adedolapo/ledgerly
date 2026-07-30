@@ -509,18 +509,18 @@ export default function Invoices() {
       {/* Search and Filters Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by client name, invoice #, status..."
-            className="w-full pl-10 pr-9 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all shadow-sm"
+            className="w-full pl-10 pr-9 py-2 text-sm bg-white dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all shadow-sm"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded-full"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 p-0.5 rounded-full"
               title="Clear search"
             >
               <X className="w-4 h-4" />
@@ -529,7 +529,7 @@ export default function Invoices() {
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 hidden sm:inline">Status:</span>
+          <span className="text-xs font-medium text-gray-500 dark:text-slate-400 hidden sm:inline">Status:</span>
           {(['all', 'pending', 'paid', 'overdue', 'approved'] as const).map((st) => {
             const count = st === 'all' ? invoices.length : invoices.filter((i) => i.status === st).length;
             return (
@@ -539,7 +539,7 @@ export default function Invoices() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all whitespace-nowrap flex items-center gap-1.5 ${
                   statusFilter === st
                     ? 'bg-violet-600 text-white shadow-sm'
-                    : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    : 'bg-white dark:bg-[#151C2C] border border-gray-200 dark:border-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800'
                 }`}
               >
                 <span>{st}</span>
@@ -547,7 +547,7 @@ export default function Invoices() {
                   className={`px-1.5 py-0.2 text-[10px] rounded-full ${
                     statusFilter === st
                       ? 'bg-white/20 text-white'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                      : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'
                   }`}
                 >
                   {count}
@@ -568,8 +568,8 @@ export default function Invoices() {
           <div className="w-12 h-12 rounded-full bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center mx-auto mb-3 text-violet-600 dark:text-violet-400">
             <Search className="w-6 h-6" />
           </div>
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">No invoices found</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-4">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-1">No invoices found</h3>
+          <p className="text-sm text-gray-500 dark:text-slate-400 max-w-sm mx-auto mb-4">
             No invoices match "{searchQuery}"{statusFilter !== 'all' ? ` in status "${statusFilter}"` : ''}.
           </p>
           <Button
@@ -584,10 +584,10 @@ export default function Invoices() {
         </Card>
       ) : (
         <Card className="overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-gray-900/40 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium">
+          <div className="px-5 py-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-[#111625] flex items-center justify-between text-xs text-gray-500 dark:text-slate-400 font-medium">
             <span>
-              Showing <strong className="text-gray-900 dark:text-gray-100">{filteredInvoices.length}</strong> of{' '}
-              <strong className="text-gray-900 dark:text-gray-100">{invoices.length}</strong> {invoices.length === 1 ? 'invoice' : 'invoices'}
+              Showing <strong className="text-gray-900 dark:text-slate-100">{filteredInvoices.length}</strong> of{' '}
+              <strong className="text-gray-900 dark:text-slate-100">{invoices.length}</strong> {invoices.length === 1 ? 'invoice' : 'invoices'}
             </span>
             {(searchQuery || statusFilter !== 'all') && (
               <button
@@ -604,14 +604,14 @@ export default function Invoices() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-800">
-                  <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Document / ID</th>
-                  <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Customer</th>
-                  <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Amount</th>
-                  <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Status</th>
-                  <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Due Date</th>
-                  <th className="text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Created</th>
-                  <th className="text-right text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-5 py-3">Actions</th>
+                <tr className="border-b border-gray-200 dark:border-slate-800">
+                  <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Document / ID</th>
+                  <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Customer</th>
+                  <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Amount</th>
+                  <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Status</th>
+                  <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Due Date</th>
+                  <th className="text-left text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Created</th>
+                  <th className="text-right text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -619,9 +619,9 @@ export default function Invoices() {
                   <tr
                     key={inv.id}
                     onClick={() => setEditingInvoice(inv)}
-                    className="border-b border-gray-100 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer"
+                    className="border-b border-gray-100 dark:border-slate-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
                   >
-                    <td className="px-5 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <td className="px-5 py-3 text-sm font-medium text-gray-900 dark:text-slate-100">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1.5 font-bold">
                           <span>{inv.invoice_number ?? inv.id.slice(0, 8)}</span>
@@ -638,7 +638,7 @@ export default function Invoices() {
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-5 py-3 text-sm text-gray-500 dark:text-slate-400">
                       {(() => {
                         const matchedContact = contacts.find((c) => c.name?.toLowerCase().trim() === inv.customer_name?.toLowerCase().trim());
                         if (matchedContact) {

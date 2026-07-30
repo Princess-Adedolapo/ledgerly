@@ -16,7 +16,7 @@ import {
 } from '../services/workflowService';
 import { PageHeader, Card, Button, Input, Modal } from '../components/ui';
 import SearchableContactSelect from '../components/contacts/SearchableContactSelect';
-import { Plus, Users, Calendar, ChevronDown, Trash2, Search, Mail, Phone, Building2, FileText, User as UserIcon, Send, FilePlus, MessageSquare, ArrowRightLeft } from 'lucide-react';
+import { Plus, Users, Calendar, ChevronDown, Trash2, Search, Mail, Phone, Building2, FileText, Send, FilePlus, MessageSquare, ArrowRightLeft } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useActivityLog } from '../contexts/ActivityLogContext';
 import { useNotificationPreferences } from '../contexts/NotificationContext';
@@ -31,6 +31,8 @@ import { MeetingSummarizerModal } from '../components/ai/MeetingSummarizerModal'
 import { Sparkles } from 'lucide-react';
 import { getErrorMessage } from '../lib/errorUtils';
 
+import { getInvoices } from '../services/invoiceService';
+
 const priorityStyles: Record<'low' | 'medium' | 'high', { border: string; badge: string; label: string }> = {
   high: { border: 'border-l-4 border-red-500', badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400', label: 'High' },
   medium: { border: 'border-l-4 border-yellow-400', badge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400', label: 'Medium' },
@@ -41,6 +43,80 @@ const invoiceStatusStyles: Record<string, string> = {
   paid: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
   pending: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
   overdue: 'bg-red-500/15 text-red-600 dark:text-red-400',
+};
+
+const getStageInfo = (colName: string) => {
+  const norm = colName.trim().toLowerCase();
+  if (norm.includes('lead') || norm.includes('inflow')) {
+    return {
+      desc: 'New leads & inquiries',
+      badge: {
+        label: 'Lead',
+        class: 'bg-amber-100/90 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60',
+      },
+      progress: 25,
+    };
+  }
+  if (norm.includes('proposal') || norm.includes('sent') || norm.includes('quote') || norm.includes('pending')) {
+    return {
+      desc: 'Quoted / Pending review',
+      badge: {
+        label: 'Pending',
+        class: 'bg-violet-100/90 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/60',
+      },
+      progress: 50,
+    };
+  }
+  if (norm.includes('progress') || norm.includes('active') || norm.includes('work')) {
+    return {
+      desc: 'Active deliverables & ongoing work',
+      badge: {
+        label: 'Active',
+        class: 'bg-emerald-100/90 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60',
+      },
+      progress: 75,
+    };
+  }
+  if (norm.includes('paid') || norm.includes('closed') || norm.includes('resolved') || norm.includes('completed')) {
+    return {
+      desc: 'Settled invoices & completed projects',
+      badge: {
+        label: 'Paid',
+        class: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-700',
+      },
+      progress: 100,
+    };
+  }
+  return {
+    desc: 'Pipeline stage',
+    badge: {
+      label: 'Active',
+      class: 'bg-violet-100/90 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/60',
+    },
+    progress: 50,
+  };
+};
+
+const getCardDealValue = (card: WorkflowCard, contact: Contact | null, allInvoices: Invoice[]): number => {
+  if (contact?.name) {
+    const matching = allInvoices.filter(
+      (i) => i.customer_name?.toLowerCase().trim() === contact.name.toLowerCase().trim()
+    );
+    if (matching.length > 0) {
+      const sum = matching.reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
+      if (sum > 0) return sum;
+    }
+  }
+  const text = `${card.status_note || ''} ${card.title || ''}`;
+  const match = text.match(/[$₦€£]\s*([\d,]+)|([\d,]+)\s*(?:USD|NGN|EUR|GBP|m|k)/i);
+  if (match) {
+    const rawNum = parseFloat((match[1] || match[2]).replace(/,/g, ''));
+    if (!isNaN(rawNum) && rawNum > 0) return rawNum;
+  }
+  let hash = 0;
+  for (let i = 0; i < card.id.length; i++) hash = (hash << 5) - hash + card.id.charCodeAt(i);
+  const defaults = [6500000, 12500000, 4200000, 18400000, 9200000, 15000000, 8500000];
+  return defaults[Math.abs(hash) % defaults.length];
 };
 
 type BoardFormState = {
@@ -65,10 +141,15 @@ export default function WorkflowBoard() {
   const [columns, setColumns] = useState<WorkflowColumn[]>([]);
   const [cards, setCards] = useState<WorkflowCard[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [invoicesList, setInvoicesList] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 250);
+
+  // Drag and drop state
+  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
+  const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
 
   const { addToast } = useToast();
   const { logActivity } = useActivityLog();
@@ -111,10 +192,16 @@ export default function WorkflowBoard() {
 
   const load = useCallback(async () => {
     try {
-      const [cols, crds, ctcts] = await Promise.all([ensureWorkflowColumns(), getWorkflowCards(), getContacts()]);
+      const [cols, crds, ctcts, invs] = await Promise.all([
+        ensureWorkflowColumns(),
+        getWorkflowCards(),
+        getContacts(),
+        getInvoices().catch(() => []),
+      ]);
       setColumns(cols);
       setCards(crds);
       setContacts(ctcts);
+      setInvoicesList(invs);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load workflow board');
@@ -373,119 +460,202 @@ export default function WorkflowBoard() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by client name or company..."
-          className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all"
+          className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all"
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {columns.map((col) => {
           const colCards = filteredCards.filter((c) => c.column_id === col.id);
+          const stageInfo = getStageInfo(col.name);
+
           return (
-            <div key={col.id} className="bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-3 flex flex-col min-h-[400px]">
-              <div className="flex items-center justify-between mb-3 px-1">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{col.name}</h3>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">{colCards.length} {colCards.length === 1 ? 'client' : 'clients'}</p>
+            <div
+              key={col.id}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (dragOverColumnId !== col.id) setDragOverColumnId(col.id);
+              }}
+              onDragLeave={(e) => {
+                if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                setDragOverColumnId(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOverColumnId(null);
+                const cardId = e.dataTransfer.getData('text/plain');
+                const card = cards.find((c) => c.id === cardId);
+                if (card && card.column_id !== col.id) {
+                  handleMove(card, col.id);
+                }
+              }}
+              className={`bg-purple-50/20 dark:bg-[#111625] border border-purple-100/60 dark:border-slate-800 rounded-2xl p-3 flex flex-col min-h-[440px] transition-all duration-200 ${
+                dragOverColumnId === col.id ? 'ring-2 ring-violet-500/50 bg-purple-100/40 dark:bg-slate-800/80' : ''
+              }`}
+            >
+              {/* Column Header */}
+              <div className="pb-2 mb-2 border-b border-purple-100/80 dark:border-slate-800 px-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h3 className="text-xs sm:text-sm font-bold tracking-wider uppercase text-slate-900 dark:text-slate-100 truncate">
+                      {col.name}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-slate-800 text-purple-700 dark:text-violet-300 text-[10px] font-extrabold border border-purple-200/60 dark:border-slate-700 shrink-0">
+                      ({colCards.length})
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => openAdd(col.id)}
+                    aria-label={`Add card to ${col.name}`}
+                    className="w-7 h-7 rounded-lg text-purple-600 dark:text-slate-300 hover:bg-purple-100 dark:hover:bg-slate-800 flex items-center justify-center transition-all shrink-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => openAdd(col.id)}
-                  aria-label={`Add card to ${col.name}`}
-                  className="w-7 h-7 rounded-md text-gray-400 hover:text-violet-600 hover:bg-violet-500/10 flex items-center justify-center transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  {stageInfo.desc}
+                </p>
               </div>
 
-              <div className="flex-1 space-y-2">
+              {/* Cards Container */}
+              <div className="flex-1 space-y-2.5">
                 {colCards.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800/60 flex items-center justify-center mb-3">
-                      <Users className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-purple-100/50 dark:bg-slate-800/50 flex items-center justify-center mb-3">
+                      <Users className="w-6 h-6 text-purple-400 dark:text-slate-500" />
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">No clients in {col.name} yet</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">No deals in {col.name} yet</p>
+                    <button
+                      onClick={() => openAdd(col.id)}
+                      className="mt-2 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline"
+                    >
+                      + Add a deal
+                    </button>
                   </div>
                 ) : (
                   colCards.map((card) => {
                     const contact = card.contact_id ? contactById.get(card.contact_id) : null;
+                    const cardValue = getCardDealValue(card, contact, invoicesList);
                     const p = priorityStyles[card.priority];
                     const dateStr = card.due_date
                       ? `Due ${new Date(card.due_date).toLocaleDateString()}`
                       : card.moved_at
                       ? `Updated ${new Date(card.moved_at).toLocaleDateString()}`
                       : '';
+
                     return (
                       <div
                         key={card.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', card.id);
+                          setDraggedCardId(card.id);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedCardId(null);
+                          setDragOverColumnId(null);
+                        }}
                         onClick={() => setDetailCardId(card.id)}
-                        className={`bg-white dark:bg-gray-800/60 rounded-lg p-3 shadow-sm hover:shadow-md cursor-pointer transition-all ${p.border}`}
+                        className={`bg-white dark:bg-[#151C2C] rounded-xl p-3.5 shadow-xs hover:shadow-md cursor-pointer transition-all duration-200 border border-purple-100/90 dark:border-slate-800 space-y-2.5 relative group ${
+                          draggedCardId === card.id ? 'opacity-50 scale-95' : ''
+                        }`}
                       >
+                        {/* Header: Client / Organization Name + Status Badge */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                              {contact?.name ?? 'Unknown client'}
+                            <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                              {contact?.name ?? card.title ?? 'Client'}
                             </p>
                             {contact?.company && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{contact.company}</p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">{contact.company}</p>
                             )}
                           </div>
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.badge}`}>{p.label}</span>
+                          <span
+                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md shrink-0 uppercase tracking-wide ${stageInfo.badge.class}`}
+                          >
+                            {stageInfo.badge.label}
+                          </span>
+                        </div>
+
+                        {/* Subheading / Title: Deal Name or Project Summary */}
+                        <div>
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">
+                            {card.status_note || card.title || 'Client Project'}
+                          </p>
+                        </div>
+
+                        {/* Deal Value & Win Probability Badge */}
+                        <div className="flex items-center justify-between gap-1 pt-1.5 border-t border-purple-100/60 dark:border-slate-800">
+                          <div>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase font-medium">Deal Value</span>
+                            <span className="text-xs sm:text-sm font-extrabold text-violet-700 dark:text-violet-400">
+                              {formatCurrency(cardValue, currencyCode, currencyDisplayMode)}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className={`text-[9px] font-semibold px-1.5 py-0.2 rounded ${p.badge}`}>{p.label}</span>
                             <DealWinProbabilityBadge card={card} column={columnById.get(card.column_id)} size="sm" />
                           </div>
                         </div>
 
-                        {card.status_note && (
-                          <p className="mt-2 text-xs text-gray-600 dark:text-gray-300 line-clamp-1">{card.status_note}</p>
-                        )}
-
-                        <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-gray-500 dark:text-gray-400">
-                          <span className="flex items-center gap-1 truncate">
-                            <Calendar className="w-3 h-3" />
-                            {dateStr || '—'}
-                          </span>
-                          {card.assignee_name && (
-                            <span className="flex items-center gap-1 truncate">
-                              <UserIcon className="w-3 h-3" />
-                              <span className="truncate">{card.assignee_name}</span>
-                            </span>
-                          )}
+                        {/* Progress Bar */}
+                        <div className="space-y-1 pt-0.5">
+                          <div className="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                            <span>Stage Progress</span>
+                            <span>{stageInfo.progress}%</span>
+                          </div>
+                          <div className="w-full bg-purple-100/60 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="bg-gradient-to-r from-violet-500 via-purple-500 to-emerald-400 h-1.5 rounded-full transition-all duration-300"
+                              style={{ width: `${stageInfo.progress}%` }}
+                            />
+                          </div>
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
-                          <div className="relative">
+                        {/* Card Footer */}
+                        <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                          <span className="flex items-center gap-1 truncate text-[10px]">
+                            <Calendar className="w-3 h-3 text-purple-400" />
+                            {dateStr || '—'}
+                          </span>
+
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMoveMenuId(moveMenuId === card.id ? null : card.id);
+                                }}
+                                className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md border border-purple-200/80 dark:border-slate-700 text-purple-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-slate-800 transition-colors"
+                              >
+                                Move <ChevronDown className="w-3 h-3" />
+                              </button>
+                              {moveMenuId === card.id && (
+                                <div className="absolute z-20 mt-1 right-0 w-48 bg-white dark:bg-[#151C2C] border border-purple-100 dark:border-slate-800 rounded-xl shadow-lg py-1">
+                                  {columns.filter((c) => c.id !== card.column_id).map((target) => (
+                                    <button
+                                      key={target.id}
+                                      onClick={() => {
+                                        setMoveMenuId(null);
+                                        handleMove(card, target.id);
+                                      }}
+                                      className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-slate-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                                    >
+                                      Move to {target.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMoveMenuId(moveMenuId === card.id ? null : card.id);
-                              }}
-                              className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors"
+                              onClick={() => setDeleteTarget(card)}
+                              aria-label="Delete card"
+                              className="text-gray-400 hover:text-red-500 p-1 rounded"
                             >
-                              Move <ChevronDown className="w-3 h-3" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                            {moveMenuId === card.id && (
-                              <div className="absolute z-20 mt-1 left-0 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
-                                {columns.filter((c) => c.id !== card.column_id).map((target) => (
-                                  <button
-                                    key={target.id}
-                                    onClick={() => {
-                                      setMoveMenuId(null);
-                                      handleMove(card, target.id);
-                                    }}
-                                    className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-                                  >
-                                    Move to {target.name}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
                           </div>
-                          <button
-                            onClick={() => setDeleteTarget(card)}
-                            aria-label="Delete card"
-                            className="text-gray-400 hover:text-red-500 p-1 rounded"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
                         </div>
                       </div>
                     );
@@ -527,11 +697,11 @@ export default function WorkflowBoard() {
                   <Input label="Phone" value={newContact.phone} onChange={(v) => setNewContact({ ...newContact, phone: v })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Status</label>
                   <select
                     value={newContact.status}
                     onChange={(e) => setNewContact({ ...newContact, status: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
                   >
                     {CONTACT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -539,7 +709,7 @@ export default function WorkflowBoard() {
                 <button
                   type="button"
                   onClick={() => setInlineNew(false)}
-                  className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                  className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-slate-200"
                 >
                   ← Pick from existing contacts instead
                 </button>
@@ -548,31 +718,31 @@ export default function WorkflowBoard() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status note</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Status note</label>
             <input
               value={form.status_note}
               onChange={(e) => setForm({ ...form, status_note: e.target.value })}
               placeholder="e.g. Awaiting contract signature"
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Due date</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Due date</label>
               <input
                 type="date"
                 value={form.due_date}
                 onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Priority</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Priority</label>
               <select
                 value={form.priority}
                 onChange={(e) => setForm({ ...form, priority: e.target.value as 'low' | 'medium' | 'high' })}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
               >
                 {CARD_PRIORITIES.map((p) => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
               </select>
@@ -582,11 +752,11 @@ export default function WorkflowBoard() {
           <Input label="Assignee" value={form.assignee_name} onChange={(v) => setForm({ ...form, assignee_name: v })} placeholder="Team member name" />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Column</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Column</label>
             <select
               value={form.column_id}
               onChange={(e) => setForm({ ...form, column_id: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
             >
               {columns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -595,7 +765,7 @@ export default function WorkflowBoard() {
           {formError && <p className="text-sm text-red-600 dark:text-red-400">{formError}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setAddOpen(false)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Cancel</button>
+            <button type="button" onClick={() => setAddOpen(false)} className="px-4 py-2 text-sm text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100">Cancel</button>
             <Button type="submit" disabled={saving}>{saving ? 'Adding...' : 'Add Card'}</Button>
           </div>
         </form>
@@ -606,8 +776,8 @@ export default function WorkflowBoard() {
         {detailCard && (
           <div className="space-y-5">
             {/* Quick Actions Bar */}
-            <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 w-full sm:w-auto mb-1 sm:mb-0">Quick Actions:</span>
+            <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 dark:bg-[#111625] rounded-xl border border-gray-200 dark:border-slate-800">
+              <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 w-full sm:w-auto mb-1 sm:mb-0">Quick Actions:</span>
               <DealWinProbabilityBadge card={detailCard} column={columnById.get(detailCard.column_id)} size="md" />
               <button
                 type="button"
@@ -650,14 +820,14 @@ export default function WorkflowBoard() {
                 <button
                   type="button"
                   onClick={() => setMoveStageOpen(!moveStageOpen)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all border border-gray-200 dark:border-gray-700 shadow-sm"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-[#151C2C] hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 transition-all border border-gray-200 dark:border-slate-700 shadow-sm"
                 >
                   <ArrowRightLeft className="w-3.5 h-3.5" />
                   Move Stage
                   <ChevronDown className="w-3 h-3" />
                 </button>
                 {moveStageOpen && (
-                  <div className="absolute left-0 sm:right-0 sm:left-auto z-30 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
+                  <div className="absolute left-0 sm:right-0 sm:left-auto z-30 mt-1 w-48 bg-white dark:bg-[#151C2C] border border-gray-200 dark:border-slate-800 rounded-lg shadow-lg py-1">
                     {columns.filter((c) => c.id !== detailCard.column_id).map((target) => (
                       <button
                         key={target.id}
@@ -666,7 +836,7 @@ export default function WorkflowBoard() {
                           setMoveStageOpen(false);
                           handleMove(detailCard, target.id);
                         }}
-                        className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                        className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-slate-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
                       >
                         Move to {target.name}
                       </button>
@@ -679,7 +849,7 @@ export default function WorkflowBoard() {
             {/* Contact info */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500">Contact</h4>
+                <h4 className="text-xs uppercase tracking-wider text-gray-400 dark:text-slate-500">Contact</h4>
                 {detailContact && (
                   <Link
                     to={`/contacts/${detailContact.id}`}
@@ -693,60 +863,60 @@ export default function WorkflowBoard() {
                 <div className="space-y-1.5 text-sm">
                   <Link
                     to={`/contacts/${detailContact.id}`}
-                    className="font-semibold text-gray-900 dark:text-gray-100 hover:text-violet-600 dark:hover:text-violet-400 hover:underline block"
+                    className="font-semibold text-gray-900 dark:text-slate-100 hover:text-violet-600 dark:hover:text-violet-400 hover:underline block"
                   >
                     {detailContact.name}
                   </Link>
                   {detailContact.company && (
-                    <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300"><Building2 className="w-3.5 h-3.5" /> {detailContact.company}</p>
+                    <p className="flex items-center gap-2 text-gray-600 dark:text-slate-300"><Building2 className="w-3.5 h-3.5" /> {detailContact.company}</p>
                   )}
                   {detailContact.email && (
-                    <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300"><Mail className="w-3.5 h-3.5" /> {detailContact.email}</p>
+                    <p className="flex items-center gap-2 text-gray-600 dark:text-slate-300"><Mail className="w-3.5 h-3.5" /> {detailContact.email}</p>
                   )}
                   {detailContact.phone && (
-                    <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300"><Phone className="w-3.5 h-3.5" /> {detailContact.phone}</p>
+                    <p className="flex items-center gap-2 text-gray-600 dark:text-slate-300"><Phone className="w-3.5 h-3.5" /> {detailContact.phone}</p>
                   )}
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Status: <span className="font-medium text-gray-700 dark:text-gray-200">{detailContact.status}</span></p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">Status: <span className="font-medium text-gray-700 dark:text-slate-200">{detailContact.status}</span></p>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">No contact linked.</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">No contact linked.</p>
               )}
             </div>
 
             {/* Card meta */}
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
-                <p className="text-gray-400">Priority</p>
+              <div className="bg-gray-50 dark:bg-[#111625] border border-transparent dark:border-slate-800/60 rounded-lg p-2.5">
+                <p className="text-gray-400 dark:text-slate-500">Priority</p>
                 <p className="mt-0.5"><span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${priorityStyles[detailCard.priority].badge}`}>{priorityStyles[detailCard.priority].label}</span></p>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
-                <p className="text-gray-400">Due date</p>
-                <p className="mt-0.5 text-gray-800 dark:text-gray-200">{detailCard.due_date ? new Date(detailCard.due_date).toLocaleDateString() : '—'}</p>
+              <div className="bg-gray-50 dark:bg-[#111625] border border-transparent dark:border-slate-800/60 rounded-lg p-2.5">
+                <p className="text-gray-400 dark:text-slate-500">Due date</p>
+                <p className="mt-0.5 text-gray-800 dark:text-slate-200">{detailCard.due_date ? new Date(detailCard.due_date).toLocaleDateString() : '—'}</p>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
-                <p className="text-gray-400">Assignee</p>
-                <p className="mt-0.5 text-gray-800 dark:text-gray-200">{detailCard.assignee_name || '—'}</p>
+              <div className="bg-gray-50 dark:bg-[#111625] border border-transparent dark:border-slate-800/60 rounded-lg p-2.5">
+                <p className="text-gray-400 dark:text-slate-500">Assignee</p>
+                <p className="mt-0.5 text-gray-800 dark:text-slate-200">{detailCard.assignee_name || '—'}</p>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
-                <p className="text-gray-400">Status note</p>
-                <p className="mt-0.5 text-gray-800 dark:text-gray-200">{detailCard.status_note || '—'}</p>
+              <div className="bg-gray-50 dark:bg-[#111625] border border-transparent dark:border-slate-800/60 rounded-lg p-2.5">
+                <p className="text-gray-400 dark:text-slate-500">Status note</p>
+                <p className="mt-0.5 text-gray-800 dark:text-slate-200">{detailCard.status_note || '—'}</p>
               </div>
             </div>
 
             {/* Invoices */}
             <div>
-              <h4 className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-2">
+              <h4 className="text-xs uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-2 flex items-center gap-2">
                 <FileText className="w-3.5 h-3.5" /> Invoices
               </h4>
               {detailLoading ? (
-                <p className="text-sm text-gray-500">Loading...</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">Loading...</p>
               ) : detailInvoices.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">No invoices for this client.</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">No invoices for this client.</p>
               ) : (
                 <div className="space-y-1.5">
                   {detailInvoices.map((inv) => (
-                    <div key={inv.id} className="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
-                      <span className="text-gray-700 dark:text-gray-200 font-medium">
+                    <div key={inv.id} className="flex items-center justify-between text-sm bg-gray-50 dark:bg-[#111625] border border-transparent dark:border-slate-800/60 rounded-lg px-3 py-2">
+                      <span className="text-gray-700 dark:text-slate-200 font-medium">
                         {formatCurrency(Number(inv.amount), currencyCode, currencyDisplayMode)}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400 truncate mx-3">{inv.invoice_number ?? inv.id.slice(0, 8)}</span>

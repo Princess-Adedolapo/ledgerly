@@ -9,6 +9,9 @@ type AuthContextType = {
   loading: boolean;
   signUp: (email: string, password: string, businessName?: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithMagicLink: (email: string) => Promise<{ error: string | null }>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -86,11 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, businessName?: string) => {
     try {
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://flowledgerly.ai.studio';
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: baseUrl,
           data: businessName?.trim() ? { business_name: businessName.trim() } : undefined,
         },
       });
@@ -178,6 +182,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithMagicLink = async (email: string) => {
+    try {
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://flowledgerly.ai.studio';
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: baseUrl,
+        },
+      });
+      if (error) {
+        console.error('[auth signInWithMagicLink] Error:', error);
+        return { error: error.message || 'Failed to send magic link email.' };
+      }
+      return { error: null };
+    } catch (err: unknown) {
+      console.error('[auth signInWithMagicLink] Exception:', err);
+      const isErrorObj = err instanceof Error;
+      const msg = isErrorObj ? err.message : String(err);
+      return { error: msg || 'An unexpected error occurred while sending magic link.' };
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://flowledgerly.ai.studio';
+      const redirectUrl = `${baseUrl}/reset-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: redirectUrl,
+      });
+      if (error) {
+        console.error('[auth resetPassword] Error:', error);
+        return { error: error.message || 'Failed to send password reset email.' };
+      }
+      return { error: null };
+    } catch (err: unknown) {
+      console.error('[auth resetPassword] Exception:', err);
+      const isErrorObj = err instanceof Error;
+      const msg = isErrorObj ? err.message : String(err);
+      return { error: msg || 'An unexpected error occurred while requesting password reset.' };
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) {
+        console.error('[auth updatePassword] Error:', error);
+        return { error: error.message || 'Failed to update password.' };
+      }
+      return { error: null };
+    } catch (err: unknown) {
+      console.error('[auth updatePassword] Exception:', err);
+      const isErrorObj = err instanceof Error;
+      const msg = isErrorObj ? err.message : String(err);
+      return { error: msg || 'An unexpected error occurred while updating password.' };
+    }
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -197,6 +259,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signUp,
         signIn,
+        signInWithMagicLink,
+        resetPassword,
+        updatePassword,
         signOut,
       }}
     >

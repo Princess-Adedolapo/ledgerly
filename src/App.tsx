@@ -7,6 +7,7 @@ import { ActivityLogProvider } from './contexts/ActivityLogContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ToastContainer } from './components/notifications/ToastContainer';
 import AuthPage from './pages/AuthPage';
+import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import AppLayout from './pages/AppLayout';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
@@ -74,6 +75,8 @@ function AppRoutes() {
           </PublicRoute>
         }
       />
+      <Route path="/update-password" element={<UpdatePasswordPage />} />
+      <Route path="/reset-password" element={<UpdatePasswordPage />} />
       <Route
         element={
           <ProtectedRoute>
