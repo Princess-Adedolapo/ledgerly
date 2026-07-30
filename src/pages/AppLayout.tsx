@@ -106,14 +106,14 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
+    <div className="min-h-screen bg-[#F8F7FF] dark:bg-[#0F0E17] flex transition-colors duration-200">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-60 bg-white dark:bg-gray-900/40 backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 shrink-0">
+      <aside className="hidden md:flex flex-col w-60 bg-white/95 dark:bg-gray-900/40 backdrop-blur-xl border-r border-purple-100/60 dark:border-gray-800 shrink-0">
         <SidebarContent onSignOut={handleSignOut} user={user} />
       </aside>
 
       {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white/95 dark:bg-gray-900/80 backdrop-blur-xl border-b border-purple-100/60 dark:border-gray-800 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-500 flex items-center justify-center">
             <LayoutDashboard className="w-4 h-4 text-white" />

@@ -23,6 +23,7 @@ import { autoResolveWorkflowCardForCustomer } from '../services/workflowService'
 import { initiatePaystackCheckout } from '../services/paystackService';
 import type { Invoice } from '../lib/supabase';
 import { formatCurrency } from '../lib/currency';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { useUserPreferences } from '../lib/userPreferences';
 import { useWorkspace } from '../lib/workspace';
 import { SignatureModal } from '../components/invoices/SignatureModal';
@@ -195,7 +196,7 @@ export default function ClientPortalPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-[#F8F7FF] dark:bg-[#0F0E17] flex flex-col items-center justify-center p-6 transition-colors duration-200">
         <div className="w-12 h-12 rounded-xl bg-violet-600/20 text-violet-600 flex items-center justify-center animate-pulse mb-3">
           <FileText className="w-6 h-6" />
         </div>
@@ -206,7 +207,7 @@ export default function ClientPortalPage() {
 
   if (error || !invoice) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-[#F8F7FF] dark:bg-[#0F0E17] flex flex-col items-center justify-center p-6 text-center transition-colors duration-200">
         <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center mb-4">
           <AlertCircle className="w-8 h-8" />
         </div>
@@ -240,7 +241,7 @@ export default function ClientPortalPage() {
   const isSigned = !!invoice.signer_name || !!invoice.signature_data || invoice.status === 'approved';
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 py-8 px-4 sm:px-6 font-sans">
+    <div className="min-h-screen bg-[#F8F7FF] dark:bg-[#0F0E17] py-8 px-4 sm:px-6 font-sans transition-colors duration-200">
       {/* CSS @media print rules for razor-sharp paper printing */}
       <style>{`
         @media print {
@@ -262,7 +263,7 @@ export default function ClientPortalPage() {
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Top Floating Control Bar (Hidden on Print) */}
-        <div className="no-print bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div className="no-print bg-white/95 dark:bg-gray-900 border border-purple-100/60 dark:border-gray-800 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center font-bold text-lg">
               {(senderName || 'L')[0].toUpperCase()}
@@ -284,6 +285,7 @@ export default function ClientPortalPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <ThemeToggle />
             {invoice.status !== 'paid' ? (
               <button
                 onClick={handlePayNow}

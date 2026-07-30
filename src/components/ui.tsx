@@ -15,7 +15,7 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`bg-white dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-xl ${className}`}>
+    <div className={`bg-white dark:bg-gray-900/60 backdrop-blur-xl border border-purple-100/60 dark:border-purple-900/30 shadow-sm rounded-xl ${className}`}>
       {children}
     </div>
   );

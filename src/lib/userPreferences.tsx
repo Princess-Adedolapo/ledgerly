@@ -19,17 +19,27 @@ const DEFAULTS: Omit<UserPreferences, 'id' | 'updated_at'> = {
   currency_code: 'USD',
   currency_display_mode: 'symbol',
   historical_currency_mode: 'original',
-  theme: 'dark',
+  theme: 'light',
 };
 
 const THEME_STORAGE_KEY = 'theme';
 
+function getSystemTheme(): ThemeMode {
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return 'light';
+}
+
 function readStoredTheme(): ThemeMode {
   try {
-    const v = typeof window !== 'undefined' ? localStorage.getItem(THEME_STORAGE_KEY) : null;
-    if (v === 'light' || v === 'dark') return v;
+    if (typeof window !== 'undefined') {
+      const v = localStorage.getItem(THEME_STORAGE_KEY);
+      if (v === 'light' || v === 'dark') return v;
+      return getSystemTheme();
+    }
   } catch { /* ignore */ }
-  return 'dark';
+  return 'light';
 }
 
 function applyThemeToDom(theme: ThemeMode) {
@@ -68,6 +78,26 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
     applyThemeToDom(localTheme);
   }, [localTheme]);
 
+  // Dynamic system theme listener (if user hasn't saved explicit manual theme in localStorage)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const handleSystemChange = (e: MediaQueryListEvent) => {
+      try {
+        const stored = localStorage.getItem(THEME_STORAGE_KEY);
+        if (!stored) {
+          setLocalTheme(e.matches ? 'dark' : 'light');
+        }
+      } catch { /* ignore */ }
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleSystemChange);
+      return () => mediaQuery.removeEventListener('change', handleSystemChange);
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -84,7 +114,9 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
         const prefs = await ensureUserPreferences();
         if (!mounted) return;
         setPreferences(prefs);
-        setLocalTheme(prefs.theme ?? 'dark');
+        if (prefs.theme) {
+          setLocalTheme(prefs.theme);
+        }
       } catch {
         if (mounted) setPreferences(null);
       } finally {
@@ -99,7 +131,7 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
         ensureUserPreferences()
           .then((p) => {
             setPreferences(p);
-            setLocalTheme(p.theme ?? 'dark');
+            if (p.theme) setLocalTheme(p.theme);
           })
           .catch(() => {});
       });

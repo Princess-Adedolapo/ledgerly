@@ -1,19 +1,15 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
-  Users,
   KanbanSquare,
-  FileText,
-  Mail,
   ArrowRight,
-  CheckCircle2,
   Sparkles,
   Check,
+  CheckCircle2,
   CreditCard,
   Clock,
-  Send,
   X,
   Tag,
   Building2,
@@ -23,33 +19,11 @@ import {
   Plus,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
-
-const features = [
-  {
-    icon: Users,
-    title: 'Contacts that stay organized',
-    desc: 'Every client, lead, and note in one searchable place — no more scattered spreadsheets.',
-  },
-  {
-    icon: KanbanSquare,
-    title: 'A workflow board you\'ll actually use',
-    desc: 'Drag deals through stages with priorities, due dates, and status notes built in.',
-  },
-  {
-    icon: FileText,
-    title: 'Invoices in seconds',
-    desc: 'Generate branded PDFs, share a permanent download link, and track paid vs overdue at a glance.',
-  },
-  {
-    icon: Mail,
-    title: 'Thoughtful email templates',
-    desc: 'Welcome, reminders, thank-you notes — auto-fill customer + invoice details and send in one click.',
-  },
-];
+import { InteractiveFeatureShowcase } from '../components/landing/InteractiveFeatureShowcase';
 
 const benefits = [
   'Auto-mark invoices as Paid when you send a thank-you',
-  'Permanent PDF share links — no expiring URLs',
+  'Permanent PDF share links with no expiring URLs',
   'Multi-currency, dark mode, and per-user preferences',
   'Your data, protected with row-level security',
 ];
@@ -58,27 +32,6 @@ const heroPills = ['CRM & Invoicing', 'Customer 360 View', 'Automated Follow-ups
 
 // Subtle premium easings
 const easeOut = [0.22, 1, 0.36, 1] as const;
-
-/* ------------------------------------------------------------------ */
-/* Status tag                                                          */
-/* ------------------------------------------------------------------ */
-
-type Tone = 'paid' | 'sent' | 'overdue' | 'scheduled' | 'auto';
-
-function StatusTag({ label, tone }: { label: string; tone: Tone }) {
-  const toneMap: Record<Tone, string> = {
-    paid: 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400',
-    sent: 'bg-accent-soft text-accent',
-    overdue: 'bg-amber-500/14 text-amber-600 dark:text-amber-400',
-    scheduled: 'bg-accent-soft text-accent',
-    auto: 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400',
-  };
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${toneMap[tone]}`}>
-      {label}
-    </span>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Customer 360 Live Mockup & Modal                                   */
@@ -168,7 +121,7 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
                   <CreditCard className="h-3.5 w-3.5" />
                 </div>
                 <div>
-                  <p className="font-semibold text-ink">Invoice #INV-1042 Sent ($4,800)</p>
+                  <p className="font-semibold text-ink">Invoice #INV-1042 Sent (₦4,800,000)</p>
                   <p className="text-[10px] text-muted">Sent via automated sequence · 2 hours ago</p>
                 </div>
               </div>
@@ -204,7 +157,7 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
               </div>
               <div className="p-2 rounded-lg border border-hairline bg-canvas/40">
                 <span className="text-muted block text-[10px]">Lifetime Value</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">$18,400</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">₦18,400,000</span>
               </div>
             </div>
           </div>
@@ -217,14 +170,14 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
                 <p className="font-semibold text-ink">Invoice #INV-1042</p>
                 <p className="text-[10px] text-muted">Due in 14 days · Brand Strategy</p>
               </div>
-              <span className="font-bold text-accent">$4,800</span>
+              <span className="font-bold text-accent">₦4,800,000</span>
             </div>
             <div className="p-2.5 rounded-lg border border-hairline bg-panel flex items-center justify-between">
               <div>
                 <p className="font-semibold text-ink">Invoice #INV-1020</p>
                 <p className="text-[10px] text-muted">Paid on Jul 10 · Design System</p>
               </div>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">$12,000 (Paid)</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">₦12,000,000 (Paid)</span>
             </div>
           </div>
         )}
@@ -309,15 +262,15 @@ function Customer360Modal({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 border-b border-hairline bg-canvas/30 text-xs">
             <div className="p-2.5 rounded-xl border border-hairline bg-panel">
               <span className="text-muted block text-[10px]">Total Revenue</span>
-              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">$18,400</span>
+              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">₦18,400,000</span>
             </div>
             <div className="p-2.5 rounded-xl border border-hairline bg-panel">
               <span className="text-muted block text-[10px]">Pending Invoices</span>
-              <span className="text-sm font-bold text-accent">$4,800 (#INV-1042)</span>
+              <span className="text-sm font-bold text-accent">₦4,800,000 (#INV-1042)</span>
             </div>
             <div className="p-2.5 rounded-xl border border-hairline bg-panel">
               <span className="text-muted block text-[10px]">Active Pipeline</span>
-              <span className="text-sm font-bold text-ink">Contract Signed ($12k)</span>
+              <span className="text-sm font-bold text-ink">Contract Signed (₦12M)</span>
             </div>
             <div className="p-2.5 rounded-xl border border-hairline bg-panel">
               <span className="text-muted block text-[10px]">Account Health</span>
@@ -515,263 +468,6 @@ function Customer360Modal({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Carousel slides — high-fidelity product mockups                     */
-/* ------------------------------------------------------------------ */
-
-function InvoicingMockup() {
-  const rows = [
-    { name: 'Acme Studio', id: '#INV-1042', amount: '$4,800', tone: 'paid' as Tone, label: 'Paid' },
-    { name: 'Rivera & Co', id: '#INV-1041', amount: '$2,150', tone: 'sent' as Tone, label: 'Sent' },
-    { name: 'Northwind LLC', id: '#INV-1039', amount: '$960', tone: 'overdue' as Tone, label: 'Overdue' },
-    { name: 'Blue Harbor', id: '#INV-1038', amount: '$3,400', tone: 'paid' as Tone, label: 'Paid' },
-  ];
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <CreditCard className="h-4 w-4 text-accent" />
-          Invoices
-        </div>
-        <span className="text-xs text-muted">4 this month · $11,310</span>
-      </div>
-      <div className="overflow-hidden rounded-xl border border-hairline">
-        {rows.map((r, i) => (
-          <div
-            key={r.id}
-            className={`flex items-center justify-between px-4 py-3 ${
-              i !== rows.length - 1 ? 'border-b border-hairline' : ''
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-[11px] font-semibold text-accent">
-                {r.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div className="leading-tight">
-                <p className="text-sm font-medium text-ink">{r.name}</p>
-                <p className="text-[11px] text-muted">{r.id}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-ink tabular-nums">{r.amount}</span>
-              <StatusTag label={r.label} tone={r.tone} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PipelineMockup() {
-  const columns = [
-    {
-      title: 'Lead',
-      cards: [
-        { name: 'Halcyon Media', tag: '$6,200' },
-        { name: 'Peak Fitness', tag: '$1,800' },
-      ],
-    },
-    {
-      title: 'In progress',
-      cards: [
-        { name: 'Rivera & Co', tag: '$2,150' },
-        { name: 'Orbit Labs', tag: '$4,000' },
-      ],
-    },
-    {
-      title: 'Won',
-      cards: [{ name: 'Acme Studio', tag: '$4,800' }],
-    },
-  ];
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-        <KanbanSquare className="h-4 w-4 text-accent" />
-        Client pipeline
-      </div>
-      <div className="grid grid-cols-3 gap-2.5">
-        {columns.map((col) => (
-          <div key={col.title} className="rounded-xl border border-hairline bg-canvas/50 p-2.5">
-            <div className="mb-2 flex items-center justify-between px-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                {col.title}
-              </span>
-              <span className="text-[10px] text-muted">{col.cards.length}</span>
-            </div>
-            <div className="space-y-2">
-              {col.cards.map((c) => (
-                <div
-                  key={c.name}
-                  className="rounded-lg border border-hairline bg-panel p-2.5 shadow-soft"
-                >
-                  <p className="text-[12px] font-medium leading-tight text-ink">{c.name}</p>
-                  <p className="mt-1 text-[11px] font-semibold text-accent tabular-nums">{c.tag}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function FollowUpMockup() {
-  const steps = [
-    { icon: Send, title: 'Welcome email', when: 'Day 0', tone: 'auto' as Tone, label: 'Sent' },
-    { icon: Clock, title: 'Invoice reminder', when: 'Day 3', tone: 'scheduled' as Tone, label: 'Scheduled' },
-    { icon: Mail, title: 'Thank-you note', when: 'Day 7', tone: 'auto' as Tone, label: 'Auto' },
-  ];
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-        <Mail className="h-4 w-4 text-accent" />
-        Follow-up sequence · Rivera &amp; Co
-      </div>
-      <div className="space-y-2.5">
-        {steps.map((s, i) => (
-          <div
-            key={s.title}
-            className="flex items-center gap-3 rounded-xl border border-hairline bg-canvas/40 px-4 py-3"
-          >
-            <div className="relative flex flex-col items-center">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent">
-                <s.icon className="h-4 w-4" />
-              </div>
-              {i !== steps.length - 1 && (
-                <span className="absolute top-9 h-3 w-px bg-hairline-strong" />
-              )}
-            </div>
-            <div className="flex-1 leading-tight">
-              <p className="text-sm font-medium text-ink">{s.title}</p>
-              <p className="text-[11px] text-muted">{s.when}</p>
-            </div>
-            <StatusTag label={s.label} tone={s.tone} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const slides = [
-  {
-    tab: 'CRM',
-    badge: 'CRM',
-    title: 'CRM & client pipelines',
-    Mockup: PipelineMockup,
-  },
-  {
-    tab: 'Invoicing',
-    badge: 'Invoicing',
-    title: 'Invoicing & payment tracking',
-    Mockup: InvoicingMockup,
-  },
-  {
-    tab: 'Customer 360',
-    badge: '360 View',
-    title: 'Customer 360: All client history in 1 view',
-    Mockup: Customer360Mockup,
-  },
-  {
-    tab: 'Follow-ups',
-    badge: 'Automation',
-    title: 'Automated email follow-ups',
-    Mockup: FollowUpMockup,
-  },
-];
-
-function FeatureCarousel({ onOpen360Demo }: { onOpen360Demo: () => void }) {
-  const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    if (paused) return;
-    const timer = window.setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
-    }, 4200);
-    return () => window.clearInterval(timer);
-  }, [paused]);
-
-  const active = slides[index];
-  const ActiveMockup = active.Mockup;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.7, ease: easeOut }}
-      className="relative mx-auto mt-16 max-w-3xl md:mt-20"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      {/* dotted grid backdrop + soft glow */}
-      <div className="grid-guides pointer-events-none absolute inset-x-0 -top-10 bottom-0 -z-10 rounded-3xl opacity-70" />
-      <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/10 blur-3xl" />
-
-      {/* Tabs */}
-      <div className="mb-5 flex flex-wrap items-center justify-center gap-2">
-        {slides.map((s, i) => (
-          <button
-            key={s.badge}
-            type="button"
-            onClick={() => setIndex(i)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 ${
-              i === index
-                ? 'bg-accent text-accent-fg shadow-soft'
-                : 'border border-hairline bg-panel text-muted hover:border-accent hover:text-ink'
-            }`}
-          >
-            {s.tab}
-          </button>
-        ))}
-      </div>
-
-      {/* Stage */}
-      <div className="relative overflow-hidden rounded-2xl border border-hairline bg-panel p-6 shadow-lift md:p-8">
-        <div className="mb-5 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
-            <Sparkles className="h-3 w-3" />
-            {active.badge}
-          </span>
-          <span className="text-sm font-medium text-muted">{active.title}</span>
-        </div>
-
-        <div className="relative min-h-[248px]">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.45, ease: easeOut }}
-            >
-              <ActiveMockup onOpenDemo={onOpen360Demo} />
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Progress dots */}
-        <div className="mt-6 flex items-center justify-center gap-2">
-          {slides.map((s, i) => (
-            <button
-              key={s.badge}
-              type="button"
-              aria-label={`Show ${s.title}`}
-              onClick={() => setIndex(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === index ? 'w-6 bg-accent' : 'w-1.5 bg-hairline-strong hover:bg-accent/50'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
 export default function Landing() {
   const navigate = useNavigate();
   const [navigating, setNavigating] = useState(false);
@@ -833,24 +529,42 @@ export default function Landing() {
 
         {/* Hero */}
         <section className="relative overflow-hidden">
-          <div className="mx-auto max-w-6xl px-6 pb-16 pt-20 text-center md:pt-28">
+          <div className="mx-auto max-w-6xl px-6 pb-12 pt-20 text-center md:pt-28">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: easeOut }}
-              className="mb-7 inline-flex items-center gap-2 rounded-full border border-hairline bg-panel px-3.5 py-1.5 text-xs font-medium text-muted shadow-soft"
+              className="mb-7 inline-flex items-center gap-3 rounded-full border border-purple-100 dark:border-purple-900/40 bg-purple-50/60 dark:bg-purple-950/40 px-3.5 py-1.5 text-xs font-medium text-slate-600 dark:text-purple-200/90 shadow-xs backdrop-blur-sm"
             >
-              <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Used by 1,000+ small businesses
+              <div className="flex -space-x-2 overflow-hidden shrink-0">
+                <img
+                  className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80"
+                  alt="User Avatar"
+                />
+                <img
+                  className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80"
+                  alt="User Avatar"
+                />
+                <img
+                  className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80"
+                  alt="User Avatar"
+                />
+              </div>
+              <span>
+                Trusted by <strong className="font-semibold text-slate-900 dark:text-white">1,000+</strong> agency owners, freelancers, and small businesses
+              </span>
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: easeOut, delay: 0.05 }}
-              className="mx-auto max-w-4xl text-balance text-4xl font-bold leading-[1.1] tracking-tight text-ink sm:text-5xl md:text-6xl"
+              className="mx-auto max-w-4xl text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-slate-900 dark:text-white sm:text-5xl md:text-6xl"
             >
               Run your client work like a{' '}
-              <span className="text-accent">proper business</span>.
+              <span className="text-violet-600 dark:text-violet-400">proper business</span>.
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 12 }}
@@ -858,8 +572,8 @@ export default function Landing() {
               transition={{ duration: 0.7, ease: easeOut, delay: 0.15 }}
               className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted"
             >
-              Contacts, deals, invoices, and follow-up emails — one focused workspace,
-              zero spreadsheet chaos.
+              Contacts, deals, invoices, and follow-up emails in one focused workspace,
+              without spreadsheet chaos.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -870,14 +584,14 @@ export default function Landing() {
               <a
                 href="/auth"
                 onClick={goToAuth}
-                className="group flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 font-medium text-accent-fg shadow-soft transition-all duration-300 hover:bg-accent-hover hover:shadow-lift"
+                className="group flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 font-semibold text-accent-fg shadow-md transition-all duration-300 hover:bg-accent-hover hover:shadow-lift hover:scale-105"
               >
                 Start free
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
               </a>
               <a
                 href="#features"
-                className="rounded-full border border-hairline-strong bg-panel px-7 py-3.5 font-medium text-ink-soft shadow-soft transition-all duration-300 hover:border-accent hover:text-ink"
+                className="rounded-full border border-hairline-strong bg-panel px-7 py-3.5 font-semibold text-ink-soft shadow-soft transition-all duration-300 hover:border-accent hover:text-ink"
               >
                 See what&apos;s inside
               </a>
@@ -888,66 +602,62 @@ export default function Landing() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: easeOut, delay: 0.35 }}
-              className="mt-7 flex flex-wrap items-center justify-center gap-2.5"
+              className="mt-8 flex flex-wrap items-center justify-center gap-2.5"
             >
               {heroPills.map((pill) => (
                 <span
                   key={pill}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-panel/60 px-3.5 py-1.5 text-sm font-medium text-ink-soft"
+                  className="inline-flex items-center gap-2 rounded-full border border-purple-200/70 dark:border-purple-800/40 bg-white/80 dark:bg-purple-950/30 px-4 py-1.5 text-xs font-semibold text-purple-900 dark:text-purple-200 shadow-xs backdrop-blur-sm"
                 >
-                  <Check className="h-3.5 w-3.5 text-accent" />
+                  <Check className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400 font-bold" />
                   {pill}
                 </span>
               ))}
             </motion.div>
-
-            <FeatureCarousel onOpen360Demo={() => setModal360Open(true)} />
           </div>
         </section>
 
-        {/* Features */}
-        <section id="features" className="mx-auto max-w-6xl px-6 py-24">
-          <div className="mx-auto mb-16 max-w-2xl text-center">
-            <h2 className="text-balance text-3xl font-bold tracking-tight text-ink md:text-4xl">
-              Everything a small operation needs.
-            </h2>
-            <p className="mt-5 text-pretty text-muted">
-              No bloat. No 40-tab settings menu. Just the tools that move client work
-              forward.
-            </p>
-          </div>
+        {/* Features Showcase */}
+        <div id="features">
+          <InteractiveFeatureShowcase />
+        </div>
 
-          {/* Spotlight Customer 360 Feature Card */}
+        {/* Spotlight Customer 360 Feature Card */}
+        <section className="mx-auto max-w-6xl px-6 py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.6, ease: easeOut }}
-            className="mb-12 rounded-3xl border border-violet-500/30 bg-gradient-to-br from-violet-500/5 via-panel to-panel p-6 sm:p-8 shadow-lift relative overflow-hidden"
+            className="rounded-3xl border border-purple-800/50 bg-gradient-to-br from-[#180E33] via-[#140C2C] to-[#0F0821] p-6 sm:p-10 shadow-2xl relative overflow-hidden text-slate-100"
           >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Background Ambient Glow */}
+            <div className="pointer-events-none absolute -right-20 -top-20 w-80 h-80 rounded-full bg-violet-600/20 blur-3xl" />
+            <div className="pointer-events-none absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-indigo-600/20 blur-3xl" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
               <div className="lg:col-span-5 space-y-4">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/15 border border-violet-500/25 px-3 py-1 text-xs font-bold text-violet-600 dark:text-violet-400">
-                  <Sparkles className="w-3.5 h-3.5" /> Spotlight Feature
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/30 px-3 py-1 text-xs font-bold text-violet-300">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Spotlight Feature
                 </span>
-                <h3 className="text-2xl font-bold text-ink tracking-tight">
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
                   Customer 360 View: Your Client&apos;s Entire Story in One Place
                 </h3>
-                <p className="text-sm leading-relaxed text-muted">
-                  Stop hunting through email threads or separate tabs. Instantly view total revenue, active deals, invoice statuses, custom tags, and complete activity history for clients like <strong className="text-ink font-semibold">Acme Studio</strong>.
+                <p className="text-sm leading-relaxed text-purple-200/80">
+                  Stop hunting through email threads or separate tabs. Instantly view total revenue, active deals, invoice statuses, custom tags, and complete activity history for clients like <strong className="text-amber-300 font-bold">Acme Studio</strong>.
                 </p>
                 <div className="pt-2 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setModal360Open(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-accent-fg font-semibold text-xs shadow-soft hover:bg-accent-hover transition-all"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all hover:scale-105"
                   >
-                    <Sparkles className="w-4 h-4" /> Try Customer 360 Demo
+                    <Sparkles className="w-4 h-4 text-amber-300" /> Try Customer 360 Demo
                   </button>
                   <button
                     type="button"
                     onClick={goToAuth}
-                    className="flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink transition-colors px-3 py-2"
+                    className="flex items-center gap-1 text-xs font-semibold text-purple-300 hover:text-white transition-colors px-3 py-2"
                   >
                     Explore Workspace →
                   </button>
@@ -958,34 +668,6 @@ export default function Landing() {
                 <Customer360Mockup onOpenDemo={() => setModal360Open(true)} />
               </div>
             </div>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={{
-              hidden: {},
-              show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
-            }}
-            className="grid gap-5 md:grid-cols-2"
-          >
-            {features.map((f) => (
-              <motion.div
-                key={f.title}
-                variants={{
-                  hidden: { opacity: 0, y: 18 },
-                  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: easeOut } },
-                }}
-                className="group rounded-2xl border border-hairline bg-panel p-7 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-lift"
-              >
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-accent-soft text-accent transition-transform duration-300 group-hover:scale-110">
-                  <f.icon className="h-5 w-5" />
-                </div>
-                <h3 className="text-lg font-semibold">{f.title}</h3>
-                <p className="mt-2.5 text-sm leading-relaxed text-muted">{f.desc}</p>
-              </motion.div>
-            ))}
           </motion.div>
         </section>
 

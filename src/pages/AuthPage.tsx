@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useWorkspace } from '../lib/workspace';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { LayoutDashboard, Mail, Lock, Loader2, Eye, EyeOff, Building2, MailCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -59,8 +60,11 @@ export default function AuthPage() {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4"
+      className="min-h-screen bg-[#F8F7FF] dark:bg-[#0F0E17] flex items-center justify-center p-4 relative transition-colors duration-200"
     >
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-3 mb-8">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-600/20">
