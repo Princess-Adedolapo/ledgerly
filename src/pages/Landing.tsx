@@ -18,18 +18,110 @@ import {
   Activity,
   Plus,
   Star,
+  XCircle,
+  ChevronDown,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { InteractiveFeatureShowcase } from '../components/landing/InteractiveFeatureShowcase';
 
-const benefits = [
-  'Auto-mark invoices as Paid when you send a thank-you',
-  'Permanent PDF share links with no expiring URLs',
-  'Multi-currency, dark mode, and per-user preferences',
-  'Your data, protected with row-level security',
+const howItWorksSteps = [
+  {
+    step: '01',
+    title: 'Import or set up your workspace',
+    text: 'Bring over your active projects, client contacts, and invoice templates in under 5 minutes.',
+  },
+  {
+    step: '02',
+    title: 'Manage projects & client portal',
+    text: 'Track deliverables, communicate, and share progress updates through one clean link.',
+  },
+  {
+    step: '03',
+    title: 'Get paid on autopilot',
+    text: 'Send professional invoices, track payment status, and automate receipt thank-yous.',
+  },
 ];
 
-const heroPills = ['CRM & Invoicing', 'Customer 360 View', 'Automated Follow-ups', 'Instant Payment Links'];
+const faqItems = [
+  {
+    q: 'How long does it take to set up Ledgerly?',
+    a: 'Most freelancers are fully set up within 5 to 10 minutes. You can import client lists or start from our ready-to-use templates right away.',
+  },
+  {
+    q: 'Can my clients access Ledgerly without creating an account?',
+    a: 'Yes. Clients receive custom view-only portal links to review deliverables and invoices, with no login or registration required on their end.',
+  },
+  {
+    q: 'Is there a free trial or credit card required to sign up?',
+    a: 'You get a 14-day full-access free trial with zero risk. No credit card is required to start.',
+  },
+  {
+    q: 'How secure is my financial data?',
+    a: 'We use enterprise-grade row-level security and encryption. Your financial records, client details, and documents are completely private and protected.',
+  },
+  {
+    q: 'Can I replace my existing invoicing and CRM tools entirely?',
+    a: 'Yes. Ledgerly combines CRM, project tracking, invoicing, and client portals into one workspace so you can cancel unnecessary subscription stacks.',
+  },
+];
+
+const comparisonFeatures = [
+  {
+    category: 'Invoice Automation',
+    ledgerly: 'Auto-mark invoices as Paid upon sending thank-you notes',
+    others: 'Manual status updates',
+  },
+  {
+    category: 'Document Sharing',
+    ledgerly: 'Permanent PDF share links with no expiring URLs',
+    others: 'Links expire or break over time',
+  },
+  {
+    category: 'Flexibility & Customization',
+    ledgerly: 'Multi-currency support, dark mode, and per-user preferences',
+    others: 'Limited single-currency / strict themes',
+  },
+  {
+    category: 'Data Security',
+    ledgerly: 'Row-level data security and enterprise protection',
+    others: 'Basic standard database permissions',
+  },
+];
+
+const testimonials = [
+  {
+    name: 'Sarah Jenkins',
+    role: 'Brand Designer & Strategist',
+    company: 'Studio Jenkins',
+    avatarBg: 'bg-violet-600',
+    avatarInitials: 'SJ',
+    rating: 5,
+    quote: 'Ledgerly cut my admin time in half and made my client onboarding look 10x more professional. Sending instant payment links right after a kick-off call has been a game-changer.',
+    highlight: 'Saved 8 hrs/week',
+  },
+  {
+    name: 'David Chen',
+    role: 'Full-Stack Developer',
+    company: 'ChenTech Consulting',
+    avatarBg: 'bg-indigo-600',
+    avatarInitials: 'DC',
+    rating: 5,
+    quote: 'Having contacts, active project milestones, and invoices under one roof eliminated the chaos of switching between Notion, Stripe, and email threads. I get paid 3x faster now.',
+    highlight: '3x Faster Payments',
+  },
+  {
+    name: 'Maya Patel',
+    role: 'Content Marketing Lead',
+    company: 'Growth Craft Media',
+    avatarBg: 'bg-emerald-600',
+    avatarInitials: 'MP',
+    rating: 5,
+    quote: 'My clients constantly compliment the portal transparency. No more "what\'s the status?" emails. Everything they need is live and updated in real-time.',
+    highlight: 'Zero Status Emails',
+  },
+];
+
+const heroPills = ['CRM', 'Projects', 'Client Portal', 'Invoices', 'Contacts', 'WhatsApp'];
 
 // Subtle premium easings
 const easeOut = [0.22, 1, 0.36, 1] as const;
@@ -473,6 +565,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const [navigating, setNavigating] = useState(false);
   const [modal360Open, setModal360Open] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   const goToAuth = useCallback(
     (e: React.MouseEvent) => {
@@ -563,7 +656,7 @@ export default function Landing() {
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 </div>
                 <span>
-                  Loved by <strong className="font-semibold text-slate-900 dark:text-white">1,000+</strong> business owners & agency leaders
+                  Loved by <strong className="font-semibold text-slate-900 dark:text-white">1,000+</strong> freelancers & business owners
                 </span>
               </div>
             </motion.div>
@@ -573,23 +666,41 @@ export default function Landing() {
               transition={{ duration: 0.7, ease: easeOut, delay: 0.05 }}
               className="mx-auto max-w-4xl text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-slate-900 dark:text-white sm:text-5xl md:text-6xl font-['Plus_Jakarta_Sans',sans-serif]"
             >
-              Run your client work like a{' '}
-              <span className="text-[#6D5FFA] dark:text-[#8174FF]">proper business</span>.
+              Everything you need to run your business in{' '}
+              <span className="text-[#6D5FFA] dark:text-[#8174FF]">one Workspace</span>.
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: easeOut, delay: 0.15 }}
-              className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted"
+              className="mx-auto mt-6 max-w-2xl text-pretty text-base sm:text-lg leading-relaxed text-muted"
             >
-              Contacts, deals, invoices, and follow-up emails in one focused workspace,
-              without spreadsheet chaos.
+              Manage clients, projects, invoices, contacts and communication without switching between five different apps.
             </motion.p>
+            {/* Feature pills */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: easeOut, delay: 0.25 }}
+              className="mt-7 flex flex-wrap items-center justify-center gap-2.5"
+            >
+              {heroPills.map((pill) => (
+                <span
+                  key={pill}
+                  className="inline-flex items-center gap-2 rounded-full border border-purple-200/70 dark:border-purple-800/40 bg-white/80 dark:bg-purple-950/30 px-4 py-1.5 text-xs font-semibold text-purple-900 dark:text-purple-200 shadow-xs backdrop-blur-sm"
+                >
+                  <Check className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400 font-bold" />
+                  {pill}
+                </span>
+              ))}
+            </motion.div>
+
+            {/* CTA Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: easeOut, delay: 0.25 }}
-              className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
+              transition={{ duration: 0.6, ease: easeOut, delay: 0.35 }}
+              className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
             >
               <a
                 href="/auth"
@@ -607,22 +718,160 @@ export default function Landing() {
               </a>
             </motion.div>
 
-            {/* Feature pills */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
+            {/* Below-CTA Friction Reducer */}
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: easeOut, delay: 0.35 }}
-              className="mt-8 flex flex-wrap items-center justify-center gap-2.5"
+              transition={{ duration: 0.6, ease: easeOut, delay: 0.4 }}
+              className="mt-3.5 text-xs text-muted font-medium flex items-center justify-center gap-1.5"
             >
-              {heroPills.map((pill) => (
-                <span
-                  key={pill}
-                  className="inline-flex items-center gap-2 rounded-full border border-purple-200/70 dark:border-purple-800/40 bg-white/80 dark:bg-purple-950/30 px-4 py-1.5 text-xs font-semibold text-purple-900 dark:text-purple-200 shadow-xs backdrop-blur-sm"
-                >
-                  <Check className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400 font-bold" />
-                  {pill}
-                </span>
-              ))}
+              Free 14-day trial • No credit card required
+            </motion.p>
+          </div>
+        </section>
+
+        {/* Problem vs. Solution Comparison Section */}
+        <section className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
+          <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+            <motion.h2
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut }}
+              className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
+            >
+              Stop juggling tools. Start closing deals.
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
+              className="mt-3 text-base sm:text-lg text-muted leading-relaxed"
+            >
+              Managing a freelance business shouldn&apos;t feel like a full-time administrative job.
+            </motion.p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+            {/* Left Column: The Old Way (Problem) */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut }}
+              className="rounded-3xl border border-red-500/20 bg-red-500/5 dark:bg-red-950/20 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden"
+            >
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 font-bold">
+                    <XCircle className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">The Old Way</span>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Fragmented & Stressful</h3>
+                  </div>
+                </div>
+
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0 text-red-500 dark:text-red-400">
+                      <XCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Fragmented client communications</p>
+                      <p className="text-xs text-muted mt-0.5 leading-relaxed">Scattered conversations across WhatsApp, inbox emails, Instagram DMs, and text messages.</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0 text-red-500 dark:text-red-400">
+                      <XCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Lost invoices & unpaid bills</p>
+                      <p className="text-xs text-muted mt-0.5 leading-relaxed">Forgetting who owes you money and manually chasing down overdue client payments.</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0 text-red-500 dark:text-red-400">
+                      <XCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Scattered project statuses</p>
+                      <p className="text-xs text-muted mt-0.5 leading-relaxed">Status updates split across Notion pages, Trello boards, sticky notes, and spreadsheets.</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0 text-red-500 dark:text-red-400">
+                      <XCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Wasted administrative hours</p>
+                      <p className="text-xs text-muted mt-0.5 leading-relaxed">Spending 10+ hours every week switching between tabs and doing redundant manual work.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </motion.div>
+
+            {/* Right Column: The Ledgerly Way (Solution) */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
+              className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/30 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden shadow-lg shadow-emerald-500/5"
+            >
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">The Ledgerly Way</span>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Unified & Effortless</h3>
+                  </div>
+                </div>
+
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Central client portal & CRM</p>
+                      <p className="text-xs text-muted mt-0.5 leading-relaxed">All contacts, activity history, and client communications organized in one place.</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Automated invoicing & payment links</p>
+                      <p className="text-xs text-muted mt-0.5 leading-relaxed">Send instant shareable payment links, track payment statuses automatically, and get paid faster.</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Real-time project tracking</p>
+                      <p className="text-xs text-muted mt-0.5 leading-relaxed">Interactive Kanban boards, milestones, and deliverables linked directly to client profiles.</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Focus on billable work & growth</p>
+                      <p className="text-xs text-muted mt-0.5 leading-relaxed">Reclaim 10+ hours every week to focus on delivering great client work and scaling your business.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
             </motion.div>
           </div>
         </section>
@@ -681,49 +930,283 @@ export default function Landing() {
           </motion.div>
         </section>
 
-        {/* Benefits strip */}
-        <section className="mx-auto max-w-6xl px-6 py-16">
+        {/* Testimonials Section */}
+        <section className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-3.5 py-1 text-xs font-bold text-amber-600 dark:text-amber-400 mb-3"
+            >
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              Trusted by 1,000+ Creators
+            </motion.div>
+            <motion.h2
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut, delay: 0.05 }}
+              className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
+            >
+              Built for freelancers, trusted by pros
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
+              className="mt-3.5 text-base sm:text-lg text-muted leading-relaxed"
+            >
+              See how independent creators and consultants saved hours every week.
+            </motion.p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+            {testimonials.map((t, idx) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, ease: easeOut, delay: idx * 0.1 }}
+                className="rounded-3xl border border-hairline bg-panel p-6 sm:p-8 shadow-soft flex flex-col justify-between hover:border-accent/40 transition-all duration-300 hover:shadow-lift group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-1">
+                      {[...Array(t.rating)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-accent-soft text-accent border border-accent/20">
+                      {t.highlight}
+                    </span>
+                  </div>
+                  <p className="text-sm sm:text-base leading-relaxed text-ink-soft dark:text-slate-200 font-normal italic">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-hairline flex items-center gap-3.5">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${t.avatarBg} text-white font-bold text-sm shadow-md`}>
+                    {t.avatarInitials}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-accent transition-colors">
+                      {t.name}
+                    </h4>
+                    <p className="text-xs text-muted font-medium">
+                      {t.role} • <span className="text-slate-500 dark:text-slate-400">{t.company}</span>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Feature Comparison Section */}
+        <section className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+            <motion.h2
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut }}
+              className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
+            >
+              The little details other tools skip
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
+              className="mt-3.5 text-base sm:text-lg text-muted leading-relaxed"
+            >
+              How Ledgerly compares to standard tools on the features that actually matter.
+            </motion.p>
+          </div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.25 }}
+            viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.7, ease: easeOut }}
-            className="grid-guides overflow-hidden rounded-3xl border border-hairline bg-panel p-10 shadow-soft md:p-14"
+            className="rounded-3xl border border-hairline bg-panel p-4 sm:p-8 shadow-soft overflow-hidden"
           >
-            <div className="grid items-center gap-10 md:grid-cols-2">
-              <div>
-                <h2 className="text-balance text-3xl font-bold tracking-tight text-ink md:text-4xl">
-                  The little details other tools skip.
-                </h2>
-                <p className="mt-5 leading-relaxed text-muted">
-                  We obsess over the workflow so you don&apos;t have to.
-                </p>
+            {/* Desktop / Tablet Table Header */}
+            <div className="hidden md:grid md:grid-cols-12 gap-4 pb-4 mb-4 border-b border-hairline items-center text-sm font-bold">
+              <div className="col-span-4 text-muted uppercase tracking-wider text-xs">Feature / Capability</div>
+              <div className="col-span-4 flex items-center gap-2 text-accent font-extrabold text-base px-4 py-2 rounded-xl bg-accent/10 border border-accent/20">
+                <Sparkles className="w-4 h-4 text-accent" />
+                <span>Ledgerly</span>
+                <span className="ml-auto text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-accent text-accent-fg">Built Better</span>
               </div>
-              <motion.ul
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.3 }}
-                variants={{
-                  hidden: {},
-                  show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
-                }}
-                className="space-y-3"
-              >
-                {benefits.map((b) => (
-                  <motion.li
-                    key={b}
-                    variants={{
-                      hidden: { opacity: 0, x: 12 },
-                      show: { opacity: 1, x: 0, transition: { duration: 0.5, ease: easeOut } },
-                    }}
-                    className="flex items-start gap-3 rounded-xl border border-transparent bg-canvas/60 px-4 py-3 transition-all duration-300 hover:border-accent hover:bg-accent-soft"
-                  >
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-                    <span className="text-ink-soft">{b}</span>
-                  </motion.li>
-                ))}
-              </motion.ul>
+              <div className="col-span-4 text-muted font-semibold text-base px-4 py-2">
+                Other Tools
+              </div>
             </div>
+
+            {/* Feature Comparison Rows */}
+            <div className="space-y-4 md:space-y-3">
+              {comparisonFeatures.map((f) => (
+                <div
+                  key={f.category}
+                  className="rounded-2xl border border-hairline/60 bg-canvas/40 md:bg-transparent md:border-none p-4 md:p-0 md:grid md:grid-cols-12 md:gap-4 md:items-center transition-all duration-200 hover:bg-canvas/80 md:hover:bg-transparent"
+                >
+                  {/* Category Name */}
+                  <div className="md:col-span-4 font-bold text-slate-900 dark:text-white text-sm sm:text-base mb-3 md:mb-0 flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-accent md:hidden"></span>
+                    {f.category}
+                  </div>
+
+                  {/* Ledgerly Feature Box */}
+                  <div className="md:col-span-4 rounded-xl bg-accent-soft/80 dark:bg-accent/10 border border-accent/25 p-3.5 mb-2.5 md:mb-0 flex items-start gap-3 shadow-xs">
+                    <CheckCircle2 className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-accent md:hidden block mb-0.5">Ledgerly</span>
+                      <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 leading-snug">
+                        {f.ledgerly}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Other Tools Box */}
+                  <div className="md:col-span-4 rounded-xl bg-slate-100/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60 p-3.5 flex items-start gap-3">
+                    <XCircle className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 md:hidden block mb-0.5">Other Tools</span>
+                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-snug">
+                        {f.others}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        {/* How It Works Section */}
+        <section className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+            <motion.h2
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut }}
+              className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
+            >
+              Up and running in 3 simple steps
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
+              className="mt-3.5 text-base sm:text-lg text-muted leading-relaxed"
+            >
+              No complex setup or weeks of learning curves.
+            </motion.p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+            {howItWorksSteps.map((step, idx) => (
+              <motion.div
+                key={step.step}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, ease: easeOut, delay: idx * 0.1 }}
+                className="rounded-3xl border border-hairline bg-panel p-6 sm:p-8 shadow-soft flex flex-col justify-between hover:border-accent/40 transition-all duration-300 hover:shadow-lift group relative overflow-hidden"
+              >
+                <div>
+                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent font-extrabold text-lg sm:text-xl border border-accent/20 mb-6 shadow-xs group-hover:scale-105 transition-transform">
+                    {step.step}
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-2.5 group-hover:text-accent transition-colors">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-muted leading-relaxed">
+                    {step.text}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="mx-auto max-w-4xl px-6 py-16 sm:py-20">
+          <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+            <motion.h2
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut }}
+              className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
+            >
+              Frequently Asked Questions
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
+              className="mt-3.5 text-base sm:text-lg text-muted leading-relaxed"
+            >
+              Everything you need to know about getting started.
+            </motion.p>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: easeOut, delay: 0.15 }}
+            className="space-y-3.5"
+          >
+            {faqItems.map((faq, idx) => {
+              const isOpen = openFaqIndex === idx;
+              return (
+                <div
+                  key={faq.q}
+                  className="rounded-2xl border border-hairline bg-panel shadow-xs overflow-hidden transition-all duration-200"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                    className="w-full px-6 py-4 sm:py-5 flex items-center justify-between gap-4 text-left font-bold text-slate-900 dark:text-white text-base sm:text-lg hover:text-accent transition-colors"
+                  >
+                    <span>{faq.q}</span>
+                    <ChevronDown
+                      className={`w-5 h-5 shrink-0 transition-transform duration-300 ${
+                        isOpen ? 'rotate-180 text-accent' : 'text-slate-400'
+                      }`}
+                    />
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        key="content"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.28, ease: easeOut }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-6 pb-5 pt-1 text-sm sm:text-base leading-relaxed text-muted border-t border-hairline/50">
+                          {faq.a}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
           </motion.div>
         </section>
 
