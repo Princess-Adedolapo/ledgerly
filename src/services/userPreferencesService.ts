@@ -1,4 +1,4 @@
-import { supabase, type UserPreferences } from '../lib/supabase';
+import { supabase, type UserPreferences, type ThemeMode } from '../lib/supabase';
 
 export async function getUserPreferences(): Promise<UserPreferences | null> {
   const { data, error } = await supabase
@@ -9,13 +9,13 @@ export async function getUserPreferences(): Promise<UserPreferences | null> {
   return data as UserPreferences | null;
 }
 
-export async function ensureUserPreferences(): Promise<UserPreferences> {
+export async function ensureUserPreferences(defaultTheme: ThemeMode = 'light'): Promise<UserPreferences> {
   const existing = await getUserPreferences();
   if (existing) return existing;
 
   const { data, error } = await supabase
     .from('user_preferences')
-    .insert({})
+    .insert({ theme: defaultTheme })
     .select('*')
     .single();
   if (error) throw error;

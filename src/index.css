@@ -81,3 +81,45 @@
   background-color: rgb(17 24 39);
   color: rgb(243 244 246);
 }
+
+/* Hide native clunky scrollbars on tag lists and horizontal containers */
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none,
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Eliminate native white scrollbar tracks and arrow buttons globally */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.55);
+}
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Sidebar scrollbar isolation: prevent any horizontal track from ever rendering */
+#app-sidebar,
+#app-sidebar nav {
+  overflow-x: hidden !important;
+}
+#app-sidebar nav::-webkit-scrollbar {
+  display: none;
+}
+

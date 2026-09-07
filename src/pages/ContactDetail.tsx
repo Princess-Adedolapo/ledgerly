@@ -551,7 +551,7 @@ export default function ContactDetail() {
       </Card>
 
       {/* Tabs Bar */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800 space-x-2 overflow-x-auto">
+      <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-800 gap-2">
         <button
           onClick={() => setActiveTab('overview')}
           className={`pb-3 px-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${

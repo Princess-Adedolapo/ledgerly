@@ -24,19 +24,11 @@ const DEFAULTS: Omit<UserPreferences, 'id' | 'updated_at'> = {
 
 const THEME_STORAGE_KEY = 'theme';
 
-function getSystemTheme(): ThemeMode {
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  return 'light';
-}
-
 function readStoredTheme(): ThemeMode {
   try {
     if (typeof window !== 'undefined') {
       const v = localStorage.getItem(THEME_STORAGE_KEY);
       if (v === 'light' || v === 'dark') return v;
-      return getSystemTheme();
     }
   } catch { /* ignore */ }
   return 'light';
@@ -78,26 +70,6 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
     applyThemeToDom(localTheme);
   }, [localTheme]);
 
-  // Dynamic system theme listener (if user hasn't saved explicit manual theme in localStorage)
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-    const handleSystemChange = (e: MediaQueryListEvent) => {
-      try {
-        const stored = localStorage.getItem(THEME_STORAGE_KEY);
-        if (!stored) {
-          setLocalTheme(e.matches ? 'dark' : 'light');
-        }
-      } catch { /* ignore */ }
-    };
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleSystemChange);
-      return () => mediaQuery.removeEventListener('change', handleSystemChange);
-    }
-  }, []);
-
   useEffect(() => {
     let mounted = true;
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -111,11 +83,21 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        const prefs = await ensureUserPreferences();
+        const activeLocal = readStoredTheme();
+        const prefs = await ensureUserPreferences(activeLocal);
         if (!mounted) return;
         setPreferences(prefs);
-        if (prefs.theme) {
+
+        // If the active local theme (established from landing page or local storage)
+        // differs from the database record, prioritize the active theme and synchronize it to DB.
+        if (prefs.theme !== activeLocal) {
+          svcUpdate({ theme: activeLocal }).catch(() => {});
+          setPreferences({ ...prefs, theme: activeLocal });
+          setLocalTheme(activeLocal);
+          applyThemeToDom(activeLocal);
+        } else {
           setLocalTheme(prefs.theme);
+          applyThemeToDom(prefs.theme);
         }
       } catch {
         if (mounted) setPreferences(null);
@@ -131,7 +113,10 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
         ensureUserPreferences()
           .then((p) => {
             setPreferences(p);
-            if (p.theme) setLocalTheme(p.theme);
+            if (p.theme && (p.theme === 'light' || p.theme === 'dark')) {
+              setLocalTheme(p.theme);
+              applyThemeToDom(p.theme);
+            }
           })
           .catch(() => {});
       });
@@ -147,18 +132,27 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
     async (patch: UpdatablePrefs): Promise<{ error: string | null }> => {
       const prev = preferences;
       if (prev) setPreferences({ ...prev, ...patch });
-      if (patch.theme) setLocalTheme(patch.theme);
+      if (patch.theme) {
+        setLocalTheme(patch.theme);
+        applyThemeToDom(patch.theme);
+      }
 
       try {
         const updated = await svcUpdate(patch);
         if (updated) {
           setPreferences(updated);
-          setLocalTheme(updated.theme ?? 'dark');
+          if (updated.theme) {
+            setLocalTheme(updated.theme);
+            applyThemeToDom(updated.theme);
+          }
         }
         return { error: null };
       } catch (err) {
         if (prev) setPreferences(prev);
-        if (prev?.theme) setLocalTheme(prev.theme);
+        if (prev?.theme) {
+          setLocalTheme(prev.theme);
+          applyThemeToDom(prev.theme);
+        }
         return { error: err instanceof Error ? err.message : 'Failed to update preferences' };
       }
     },
@@ -167,11 +161,15 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
 
   const setTheme = useCallback(
     async (theme: ThemeMode) => {
-      // Apply visually right away, even before the DB call resolves
+      // Apply visually right away, both to local state and DOM/localStorage
       setLocalTheme(theme);
-      return await updatePreferences({ theme });
+      applyThemeToDom(theme);
+      if (session) {
+        return await updatePreferences({ theme });
+      }
+      return { error: null };
     },
-    [updatePreferences]
+    [session, updatePreferences]
   );
 
   const toggleTheme = useCallback(async () => {

@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      support_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          category: string
+          message: string
+          severity: string | null
+          contact_email: string
+          status: string | null
+          priority?: string | null
+          user_email?: string | null
+          metadata?: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          category: string
+          message: string
+          severity?: string | null
+          contact_email: string
+          status?: string | null
+          priority?: string | null
+          user_email?: string | null
+          metadata?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          category?: string
+          message?: string
+          severity?: string | null
+          contact_email?: string
+          status?: string | null
+          priority?: string | null
+          user_email?: string | null
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           company: string | null

@@ -586,7 +586,7 @@ export function ContactDetailPanel({
               )}
 
               {/* Timeline Filters */}
-              <div className="flex gap-1 overflow-x-auto pb-1 text-[11px]">
+              <div className="flex flex-wrap gap-1 text-[11px]">
                 {(['all', 'notes', 'calls', 'emails', 'workflow'] as const).map((filter) => (
                   <button
                     key={filter}

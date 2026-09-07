@@ -154,3 +154,30 @@ export const DEFAULT_WORKFLOW_COLUMNS = [
 ] as const;
 
 export const CARD_PRIORITIES = ['low', 'medium', 'high'] as const;
+
+export type SupportCategory =
+  | 'Technical Bug'
+  | 'Billing & Payments'
+  | 'Account Setup'
+  | 'General Inquiry';
+
+export type SupportPriority = 'normal' | 'urgent';
+
+export type SupportTicket = {
+  id?: string;
+  user_email: string;
+  category: SupportCategory;
+  message: string;
+  priority?: SupportPriority;
+  metadata?: {
+    route?: string;
+    userAgent?: string;
+    screen?: string;
+    workspace_id?: string | null;
+    attachment_name?: string | null;
+    attachment_data?: string | null;
+  };
+  status?: string;
+  created_at?: string;
+};
+

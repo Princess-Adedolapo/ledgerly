@@ -528,7 +528,7 @@ export default function Invoices() {
           )}
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-gray-500 dark:text-slate-400 hidden sm:inline">Status:</span>
           {(['all', 'pending', 'paid', 'overdue', 'approved'] as const).map((st) => {
             const count = st === 'all' ? invoices.length : invoices.filter((i) => i.status === st).length;

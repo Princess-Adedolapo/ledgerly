@@ -216,3 +216,47 @@ export const AIDealInsightsRequestSchema = z.object({
   winProbability: z.number().min(0).max(100).default(50),
   notes: sanitizedOptionalString(3000),
 }).strict();
+
+// ==========================================
+// 8. SUPPORT TICKET & REPORT SCHEMA
+// ==========================================
+export const SupportTicketSchema = z.object({
+  id: z.string().optional(),
+  contact_email: z.preprocess(
+    (val) => (typeof val === 'string' ? sanitizeText(val).trim().toLowerCase() : val),
+    z.string().email('Please enter a valid email address').optional()
+  ),
+  user_email: z.preprocess(
+    (val) => (typeof val === 'string' ? sanitizeText(val).trim().toLowerCase() : val),
+    z.string().email('Please enter a valid email address').optional()
+  ),
+  category: z.preprocess(
+    (val) => (typeof val === 'string' ? val.trim() : val),
+    z.string().min(1, 'Category is required').default('Technical Bug')
+  ),
+  message: z.preprocess(
+    (val) => (typeof val === 'string' ? sanitizeText(val).trim() : val),
+    z
+      .string({ required_error: 'Message is required' })
+      .min(5, 'Message must be at least 5 characters.')
+      .max(5000, 'Message cannot exceed 5,000 characters.')
+  ),
+  severity: z.preprocess(
+    (val) => (typeof val === 'string' ? val.trim().toLowerCase() : val),
+    z.enum(['normal', 'urgent']).optional()
+  ),
+  priority: z.preprocess(
+    (val) => (typeof val === 'string' ? val.trim().toLowerCase() : val),
+    z.enum(['normal', 'urgent']).optional()
+  ),
+  metadata: z.record(z.unknown()).optional().default({}),
+  status: z.string().optional().default('open'),
+  created_at: z.string().optional(),
+}).passthrough().refine(
+  (data) => Boolean(data.contact_email || data.user_email),
+  {
+    message: 'Contact email is required',
+    path: ['contact_email'],
+  }
+);
+

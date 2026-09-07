@@ -20,6 +20,7 @@ import EmailComposer from './components/email/EmailComposer';
 import AcceptInvitePage from './pages/AcceptInvitePage';
 import ClientPortalPage from './pages/ClientPortalPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfUse from './pages/TermsOfUse';
 import { LayoutDashboard } from 'lucide-react';
 
 
@@ -53,6 +54,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfUse />} />
       <Route path="/invite/:token" element={<AcceptInvitePage />} />
       <Route path="/portal/invoice/:id" element={<ClientPortalPage />} />
       <Route path="/portal/share/:id" element={<ClientPortalPage />} />

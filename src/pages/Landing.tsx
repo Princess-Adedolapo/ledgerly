@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { InteractiveFeatureShowcase } from '../components/landing/InteractiveFeatureShowcase';
+import { TestimonialsCarousel } from '../components/landing/TestimonialsCarousel';
 
 const howItWorksSteps = [
   {
@@ -85,39 +86,6 @@ const comparisonFeatures = [
     category: 'Data Security',
     ledgerly: 'Row-level data security and enterprise protection',
     others: 'Basic standard database permissions',
-  },
-];
-
-const testimonials = [
-  {
-    name: 'Sarah Jenkins',
-    role: 'Brand Designer & Strategist',
-    company: 'Studio Jenkins',
-    avatarBg: 'bg-violet-600',
-    avatarInitials: 'SJ',
-    rating: 5,
-    quote: 'Ledgerly cut my admin time in half and made my client onboarding look 10x more professional. Sending instant payment links right after a kick-off call has been a game-changer.',
-    highlight: 'Saved 8 hrs/week',
-  },
-  {
-    name: 'David Chen',
-    role: 'Full-Stack Developer',
-    company: 'ChenTech Consulting',
-    avatarBg: 'bg-indigo-600',
-    avatarInitials: 'DC',
-    rating: 5,
-    quote: 'Having contacts, active project milestones, and invoices under one roof eliminated the chaos of switching between Notion, Stripe, and email threads. I get paid 3x faster now.',
-    highlight: '3x Faster Payments',
-  },
-  {
-    name: 'Maya Patel',
-    role: 'Content Marketing Lead',
-    company: 'Growth Craft Media',
-    avatarBg: 'bg-emerald-600',
-    avatarInitials: 'MP',
-    rating: 5,
-    quote: 'My clients constantly compliment the portal transparency. No more "what\'s the status?" emails. Everything they need is live and updated in real-time.',
-    highlight: 'Zero Status Emails',
   },
 ];
 
@@ -565,7 +533,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const [navigating, setNavigating] = useState(false);
   const [modal360Open, setModal360Open] = useState(false);
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   const goToAuth = useCallback(
     (e: React.MouseEvent) => {
@@ -593,7 +561,7 @@ export default function Landing() {
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent shadow-soft">
                 <LayoutDashboard className="h-5 w-5 text-accent-fg" />
               </div>
-              <span className="text-lg font-semibold tracking-tight">Ledgerly</span>
+              <span className="text-[18px] leading-[27px] text-justify font-semibold tracking-tight">Ledgerly</span>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <a
@@ -602,18 +570,18 @@ export default function Landing() {
               >
                 Features
               </a>
-              <ThemeToggle />
+              <ThemeToggle className="text-[15px] h-[33.6px] w-[34.6px] text-center" />
               <a
                 href="/auth"
                 onClick={goToAuth}
-                className="text-sm font-medium text-muted transition-colors duration-300 hover:text-ink"
+                className="h-[21px] pl-0 text-[14px] leading-[19px] font-medium text-muted transition-colors duration-300 hover:text-ink flex items-center"
               >
                 Sign in
               </a>
               <a
                 href="/auth"
                 onClick={goToAuth}
-                className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-fg shadow-soft transition-all duration-300 hover:bg-accent-hover hover:shadow-lift"
+                className="inline-flex items-center justify-center rounded-full bg-accent pt-[8px] pb-[8px] pl-[15px] pr-[15px] ml-[1px] mr-[1px] mt-0 mb-0 w-[95.65px] h-[38px] text-center text-[12px] font-normal leading-[20px] text-accent-fg shadow-soft transition-all duration-300 hover:bg-accent-hover hover:shadow-lift"
               >
                 Get started
               </a>
@@ -623,12 +591,12 @@ export default function Landing() {
 
         {/* Hero */}
         <section className="relative overflow-hidden">
-          <div className="mx-auto max-w-6xl px-6 pb-12 pt-20 text-center md:pt-28">
+          <div className="mx-auto max-w-6xl px-6 pb-6 pt-12 text-center md:pt-16">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: easeOut }}
-              className="mb-7 inline-flex flex-wrap items-center justify-center gap-3 rounded-full border border-purple-100 dark:border-purple-900/40 bg-purple-50/60 dark:bg-purple-950/40 px-4 py-1.5 text-xs font-medium text-slate-700 dark:text-purple-200/90 shadow-xs backdrop-blur-sm"
+              className="mb-5 inline-flex flex-wrap items-center justify-center gap-3 rounded-full border border-purple-100 dark:border-purple-900/40 bg-purple-50/60 dark:bg-purple-950/40 px-4 py-1.5 text-xs font-medium text-slate-700 dark:text-purple-200/90 shadow-xs backdrop-blur-sm"
             >
               <div className="flex -space-x-2 overflow-hidden shrink-0">
                 <img
@@ -673,7 +641,7 @@ export default function Landing() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: easeOut, delay: 0.15 }}
-              className="mx-auto mt-6 max-w-2xl text-pretty text-base sm:text-lg leading-relaxed text-muted"
+              className="mx-auto mt-4 max-w-2xl text-pretty text-base sm:text-lg leading-relaxed text-muted"
             >
               Manage clients, projects, invoices, contacts and communication without switching between five different apps.
             </motion.p>
@@ -682,7 +650,7 @@ export default function Landing() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: easeOut, delay: 0.25 }}
-              className="mt-7 flex flex-wrap items-center justify-center gap-2.5"
+              className="mt-5 flex flex-wrap items-center justify-center gap-2.5"
             >
               {heroPills.map((pill) => (
                 <span
@@ -700,7 +668,7 @@ export default function Landing() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: easeOut, delay: 0.35 }}
-              className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
+              className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row"
             >
               <a
                 href="/auth"
@@ -717,21 +685,11 @@ export default function Landing() {
                 See what&apos;s inside
               </a>
             </motion.div>
-
-            {/* Below-CTA Friction Reducer */}
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: easeOut, delay: 0.4 }}
-              className="mt-3.5 text-xs text-muted font-medium flex items-center justify-center gap-1.5"
-            >
-              Free 14-day trial • No credit card required
-            </motion.p>
           </div>
         </section>
 
         {/* Problem vs. Solution Comparison Section */}
-        <section className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
+        <section className="mx-auto max-w-6xl px-6 py-8 sm:py-10">
           <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
             <motion.h2
               initial={{ opacity: 0, y: 16 }}
@@ -881,6 +839,32 @@ export default function Landing() {
           <InteractiveFeatureShowcase />
         </div>
 
+        {/* Micro-Separator */}
+        <div className="mx-auto max-w-6xl px-6 pt-10 pb-2 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: easeOut }}
+            className="flex flex-col items-center justify-center gap-2"
+          >
+            <div className="flex items-center justify-center gap-3 w-full max-w-md">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-300 dark:via-purple-700/60 to-transparent" />
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-100/90 dark:bg-purple-950/80 border border-purple-200/90 dark:border-purple-800/80 text-xs font-extrabold text-violet-700 dark:text-violet-300 uppercase tracking-wider shadow-sm">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> Take a peek under the hood
+              </span>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-300 dark:via-purple-700/60 to-transparent" />
+            </div>
+            <motion.div
+              animate={{ y: [0, 4, 0] }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+              className="mt-0.5 flex items-center justify-center text-purple-500 dark:text-purple-400"
+            >
+              <ChevronDown className="w-5 h-5" />
+            </motion.div>
+          </motion.div>
+        </div>
+
         {/* Spotlight Customer 360 Feature Card */}
         <section className="mx-auto max-w-6xl px-6 py-12">
           <motion.div
@@ -963,48 +947,7 @@ export default function Landing() {
             </motion.p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
-            {testimonials.map((t, idx) => (
-              <motion.div
-                key={t.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, ease: easeOut, delay: idx * 0.1 }}
-                className="rounded-3xl border border-hairline bg-panel p-6 sm:p-8 shadow-soft flex flex-col justify-between hover:border-accent/40 transition-all duration-300 hover:shadow-lift group"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-1">
-                      {[...Array(t.rating)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-accent-soft text-accent border border-accent/20">
-                      {t.highlight}
-                    </span>
-                  </div>
-                  <p className="text-sm sm:text-base leading-relaxed text-ink-soft dark:text-slate-200 font-normal italic">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                </div>
-
-                <div className="mt-6 pt-6 border-t border-hairline flex items-center gap-3.5">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${t.avatarBg} text-white font-bold text-sm shadow-md`}>
-                    {t.avatarInitials}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-accent transition-colors">
-                      {t.name}
-                    </h4>
-                    <p className="text-xs text-muted font-medium">
-                      {t.role} • <span className="text-slate-500 dark:text-slate-400">{t.company}</span>
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          <TestimonialsCarousel />
         </section>
 
         {/* Feature Comparison Section */}
@@ -1221,12 +1164,34 @@ export default function Landing() {
           >
             Ready to tidy up your business?
           </motion.h2>
+
+          {/* Who It's For Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.6, ease: easeOut, delay: 0.08 }}
+            className="mt-6 mb-2 inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-4 py-2 rounded-full bg-purple-50/90 dark:bg-purple-950/60 border border-purple-200/80 dark:border-purple-800/60 shadow-xs max-w-full"
+          >
+            <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-300 mr-0.5 shrink-0">
+              Built for:
+            </span>
+            {['Freelancers', 'Agencies', 'Consultants', 'Designers', 'Developers', 'Coaches'].map((role, i, arr) => (
+              <span key={role} className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">
+                <span>{role}</span>
+                {i < arr.length - 1 && (
+                  <span className="text-purple-400 dark:text-purple-600 font-bold">•</span>
+                )}
+              </span>
+            ))}
+          </motion.div>
+
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
-            className="mt-5 text-lg text-muted"
+            transition={{ duration: 0.6, ease: easeOut, delay: 0.12 }}
+            className="mt-3 text-lg text-muted"
           >
             Create your workspace in under a minute.
           </motion.p>
@@ -1249,6 +1214,9 @@ export default function Landing() {
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 text-sm text-muted md:flex-row">
             <p>© {new Date().getFullYear()} Ledgerly. Built for tiny teams.</p>
             <div className="flex items-center gap-5">
+              <Link to="/terms" className="transition-colors duration-300 hover:text-ink font-medium">
+                Terms of Use
+              </Link>
               <Link to="/privacy" className="transition-colors duration-300 hover:text-ink font-medium">
                 Privacy Policy
               </Link>

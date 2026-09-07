@@ -23,17 +23,17 @@
     
 
     <script>
-      // Anti-flash: apply theme before React loads
+      // Anti-flash: apply theme before React loads (default: light mode)
       (function () {
         try {
           var stored = localStorage.getItem('theme');
-          if (stored === 'light') {
-            document.documentElement.classList.remove('dark');
-          } else {
+          if (stored === 'dark') {
             document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
           }
         } catch (e) {
-          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('dark');
         }
       })();
     </script>

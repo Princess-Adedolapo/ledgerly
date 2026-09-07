@@ -346,6 +346,7 @@ export default function PrivacyPolicy() {
             <Link to="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">Home</Link>
             <Link to="/dashboard" className="hover:text-gray-900 dark:hover:text-white transition-colors">Dashboard</Link>
             <Link to="/invoices" className="hover:text-gray-900 dark:hover:text-white transition-colors">Invoices</Link>
+            <Link to="/terms" className="hover:text-gray-900 dark:hover:text-white transition-colors">Terms of Use</Link>
             <Link to="/privacy" className="font-semibold text-violet-600 dark:text-violet-400">Privacy Policy</Link>
           </div>
         </div>

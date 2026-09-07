@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { supabase, type Workspace, type ThemeMode } from './supabase';
 import { useAuth } from './auth';
+import { useTheme as useUserTheme } from './userPreferences';
 import {
   listMyWorkspaces,
   ensureAtLeastOneWorkspace,
@@ -56,22 +57,12 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefin
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
+  const { theme: currentTheme, setTheme: setUserTheme, toggleTheme: userToggleTheme } = useUserTheme();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeId, setActiveIdState] = useState<string | null>(tryGetActiveWorkspaceId());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletedWorkspaces, setDeletedWorkspaces] = useState<Workspace[]>([]);
-
-  const applyTheme = useCallback((theme: ThemeMode) => {
-    const root = document.documentElement;
-    if (theme === 'dark') root.classList.add('dark');
-    else root.classList.remove('dark');
-    try {
-      localStorage.setItem('theme', theme);
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   const refreshWorkspaces = useCallback(async () => {
     const list = await listMyWorkspaces();
@@ -131,7 +122,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [session, applyTheme]);
+  }, [session, refreshDeletedWorkspaces]);
 
   const activeWorkspace = useMemo(
     () => workspaces.find((w) => w.id === activeId) ?? null,
@@ -152,7 +143,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             if (next) {
               writeActive(next.id);
               setActiveIdState(next.id);
-              applyTheme(next.theme);
             } else {
               writeActive(null);
               setActiveIdState(null);
@@ -169,7 +159,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session, applyTheme]);
+  }, [session]);
 
   const switchWorkspace = useCallback((id: string) => {
     const target = workspaces.find((w) => w.id === id);
@@ -197,16 +187,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setWorkspaces((prev) => prev.map((w) => (w.id === activeId ? { ...w, business_tagline: tagline } : w)));
   }, [activeId]);
 
-  const setTheme = useCallback(async (theme: ThemeMode) => {
-    applyTheme(theme);
-    setWorkspaces((prev) => prev.map((w) => (w.id === activeId ? { ...w, theme } : w)));
-    await svcUpdateTheme(theme);
-  }, [activeId, applyTheme]);
+  const setTheme = useCallback(async (newTheme: ThemeMode) => {
+    await setUserTheme(newTheme);
+    setWorkspaces((prev) => prev.map((w) => (w.id === activeId ? { ...w, theme: newTheme } : w)));
+    if (activeId) {
+      await svcUpdateTheme(newTheme).catch(() => {});
+    }
+  }, [activeId, setUserTheme]);
 
   const toggleTheme = useCallback(async () => {
-    const cur = activeWorkspace?.theme ?? 'dark';
-    await setTheme(cur === 'dark' ? 'light' : 'dark');
-  }, [activeWorkspace?.theme, setTheme]);
+    await userToggleTheme();
+  }, [userToggleTheme]);
 
   const setWeeklySalesTarget = useCallback(async (target: number) => {
     setWorkspaces((prev) => prev.map((w) => (w.id === activeId ? { ...w, weekly_sales_target: target } : w)));
@@ -227,13 +218,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (next) {
       writeActive(next.id);
       setActiveIdState(next.id);
-      applyTheme(next.theme);
     } else {
       writeActive(null);
       setActiveIdState(null);
     }
     await refreshDeletedWorkspaces();
-  }, [applyTheme, refreshDeletedWorkspaces]);
+  }, [refreshDeletedWorkspaces]);
 
   // Restores a soft-deleted workspace and adds it back to the active list.
   const restoreWorkspace = useCallback(async (id: string): Promise<void> => {
@@ -245,7 +235,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const businessName = activeWorkspace?.name ?? 'My Workspace';
   const businessTagline = activeWorkspace?.business_tagline ?? '';
-  const theme: ThemeMode = activeWorkspace?.theme ?? 'dark';
+  const theme: ThemeMode = currentTheme;
   const weeklySalesTarget = Number(activeWorkspace?.weekly_sales_target ?? 20000);
 
   return (
@@ -287,15 +277,7 @@ export function useWorkspace() {
   return ctx;
 }
 
-export function useTheme() {
-  const ctx = useContext(WorkspaceContext);
-  if (!ctx) throw new Error('useTheme must be used within WorkspaceProvider');
-  return {
-    theme: ctx.theme,
-    setTheme: ctx.setTheme,
-    toggleTheme: ctx.toggleTheme,
-  };
-}
+export { useTheme } from './userPreferences';
 
 export function useActiveWorkspaceId() {
   return useContext(WorkspaceContext)?.activeWorkspaceId ?? null;

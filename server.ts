@@ -2,7 +2,11 @@ import express from 'express';
 import path from 'path';
 import crypto from 'crypto';
 import { GoogleGenAI, Type } from '@google/genai';
-import { AIMeetingSummaryRequestSchema, AIDealInsightsRequestSchema } from './src/lib/validation';
+import {
+  AIMeetingSummaryRequestSchema,
+  AIDealInsightsRequestSchema,
+  SupportTicketSchema,
+} from './src/lib/validation';
 
 process.on('uncaughtException', (err) => {
   console.error('[Server Uncaught Exception]:', err);
@@ -394,6 +398,165 @@ Provide 3 actionable, high-impact sales recommendations to increase the win prob
     } catch (err) {
       console.error('Paystack webhook error:', err);
       return res.status(500).send('Webhook Error');
+    }
+  });
+
+  // In-memory fallback support tickets registry
+  const inMemorySupportTickets: Array<{
+    id: string;
+    user_email: string;
+    category: string;
+    message: string;
+    priority: string;
+    metadata: unknown;
+    status: string;
+    created_at: string;
+  }> = [];
+
+  // API: Submit Support Ticket & Report Bug (Database persistence & automated email dispatch to ceopano@gmail.com)
+  app.post('/api/support/report', async (req, res) => {
+    try {
+      const parseResult = SupportTicketSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        const details = parseResult.error.issues.map((i) => i.message);
+        console.warn('[Support Server] Validation failed:', details);
+        return res.status(400).json({
+          error: 'Validation failed',
+          details,
+          message: details.join('. ') || 'Validation failed. Please check the entered fields.',
+        });
+      }
+
+      const contactEmail = parseResult.data.contact_email || parseResult.data.user_email || 'user@ledgerly.app';
+      const severity = parseResult.data.severity || parseResult.data.priority || 'normal';
+      const { category, message, metadata } = parseResult.data;
+      const ticketId = crypto.randomUUID ? crypto.randomUUID() : `ticket_${Date.now()}`;
+      const createdAt = new Date().toISOString();
+
+      const ticketRecord = {
+        id: ticketId,
+        contact_email: contactEmail,
+        user_email: contactEmail,
+        category,
+        message,
+        severity,
+        priority: severity,
+        metadata: metadata || {},
+        status: 'open',
+        created_at: createdAt,
+      };
+
+      inMemorySupportTickets.unshift(ticketRecord);
+      if (inMemorySupportTickets.length > 500) {
+        inMemorySupportTickets.pop();
+      }
+
+      // 1. Attempt database persistence into Supabase via REST if credentials exist
+      let dbPersisted = false;
+      const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      if (supabaseUrl && supabaseKey && !supabaseUrl.includes('placeholder')) {
+        try {
+          const dbRes = await fetch(`${supabaseUrl}/rest/v1/support_tickets`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify({
+              id: ticketId,
+              contact_email: contactEmail,
+              category,
+              message,
+              severity,
+              status: 'open',
+              created_at: createdAt,
+            }),
+          });
+          if (dbRes.ok) {
+            dbPersisted = true;
+          }
+        } catch (dbErr) {
+          console.warn('[Support Server] Supabase direct insert notice:', dbErr);
+        }
+      }
+
+      // 2. Trigger automated email dispatch to ceopano@gmail.com
+      const recipientEmail = 'ceopano@gmail.com';
+      const subject = `[Ledgerly Support] ${severity === 'urgent' ? '🚨 [URGENT] ' : ''}${category}: From ${contactEmail}`;
+      const emailBody = `
+New Support Ticket / Problem Report Received:
+---------------------------------------------
+Ticket ID:    ${ticketId}
+From User:    ${contactEmail}
+Category:     ${category}
+Priority:     ${severity === 'urgent' ? 'URGENT / BLOCKER' : 'Normal'}
+Timestamp:    ${createdAt}
+
+User Message:
+---------------------------------------------
+${message}
+
+Diagnostic Telemetry & Context:
+---------------------------------------------
+Current Route:     ${(metadata as { route?: string })?.route || 'N/A'}
+Workspace ID:      ${(metadata as { workspace_id?: string })?.workspace_id || 'N/A'}
+Screen Resolution: ${(metadata as { screen?: string })?.screen || 'N/A'}
+Client User Agent: ${(metadata as { userAgent?: string })?.userAgent || 'N/A'}
+Attachment:        ${(metadata as { attachment_name?: string })?.attachment_name || 'None'}
+
+--
+Automated Dispatch Notification from Ledgerly Support Engine
+      `.trim();
+
+      // Dispatch automated notification email via external provider if configured
+      let emailDispatched = false;
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const resendRes = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: process.env.SUPPORT_FROM_EMAIL || 'support@ledgerly.app',
+              to: [recipientEmail],
+              subject,
+              text: emailBody,
+            }),
+          });
+          if (resendRes.ok) emailDispatched = true;
+        } catch (mailErr) {
+          console.warn('[Support Server] Resend dispatch notice:', mailErr);
+        }
+      }
+
+      // Automated dispatch event logged with full operational context
+      console.log(`\n======================================================`);
+      console.log(`[AUTOMATED EMAIL DISPATCH TRIGGERED TO: ${recipientEmail}]`);
+      console.log(`Subject: ${subject}`);
+      console.log(`Ticket ID: ${ticketId}`);
+      console.log(`User: ${contactEmail} | Category: ${category} | Priority: ${severity}`);
+      console.log(`Database Persisted: ${dbPersisted} | Email Sent: ${emailDispatched}`);
+      console.log(`======================================================\n`);
+
+      return res.json({
+        success: true,
+        message: "Message sent! We'll get back to you shortly.",
+        ticketId,
+        dispatchedTo: recipientEmail,
+        persisted: dbPersisted,
+      });
+    } catch (err) {
+      console.error('[Support Report Error]:', err);
+      return res.status(500).json({
+        error: 'Failed to process support report',
+        message: err instanceof Error ? err.message : 'Unknown server error',
+      });
     }
   });
 
