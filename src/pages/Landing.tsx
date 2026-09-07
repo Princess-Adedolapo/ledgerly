@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -21,7 +21,6 @@ import {
   XCircle,
   ChevronDown,
 } from 'lucide-react';
-import { ThemeToggle } from '../components/ThemeToggle';
 import { InteractiveFeatureShowcase } from '../components/landing/InteractiveFeatureShowcase';
 import { TestimonialsCarousel } from '../components/landing/TestimonialsCarousel';
 
@@ -106,13 +105,13 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
       {/* Header Profile Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-hairline bg-canvas/60">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 font-bold text-white shadow-soft text-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#221F33] text-[#A29BFE] font-bold shadow-soft text-sm border border-hairline">
             AS
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-bold text-ink">Acme Studio</h4>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/30">
                 Active Client
               </span>
             </div>
@@ -120,14 +119,14 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="hidden sm:inline-flex px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+          <span className="hidden sm:inline-flex px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-hairline bg-transparent text-slate-300">
             Stage: Retainer Signed
           </span>
           {onOpenDemo && (
             <button
               type="button"
               onClick={onOpenDemo}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-accent text-accent-fg shadow-soft hover:bg-accent-hover transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-accent text-white shadow-soft hover:bg-accent-hover transition-all"
             >
               <Sparkles className="h-3.5 w-3.5" /> Demo 360
             </button>
@@ -142,7 +141,7 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
           onClick={() => setActiveTab('timeline')}
           className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
             activeTab === 'timeline'
-              ? 'bg-accent text-accent-fg shadow-soft'
+              ? 'bg-accent text-white shadow-soft'
               : 'text-muted hover:text-ink hover:bg-panel'
           }`}
         >
@@ -153,7 +152,7 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
           onClick={() => setActiveTab('tags')}
           className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
             activeTab === 'tags'
-              ? 'bg-accent text-accent-fg shadow-soft'
+              ? 'bg-accent text-white shadow-soft'
               : 'text-muted hover:text-ink hover:bg-panel'
           }`}
         >
@@ -164,7 +163,7 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
           onClick={() => setActiveTab('invoices')}
           className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
             activeTab === 'invoices'
-              ? 'bg-accent text-accent-fg shadow-soft'
+              ? 'bg-accent text-white shadow-soft'
               : 'text-muted hover:text-ink hover:bg-panel'
           }`}
         >
@@ -178,7 +177,7 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
           <div className="space-y-2">
             <div className="p-2.5 rounded-lg border border-hairline bg-panel flex items-start justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
-                <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <div className="p-1 rounded-md bg-teal-500/10 text-teal-400">
                   <CreditCard className="h-3.5 w-3.5" />
                 </div>
                 <div>
@@ -186,11 +185,11 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
                   <p className="text-[10px] text-muted">Sent via automated sequence · 2 hours ago</p>
                 </div>
               </div>
-              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Sent</span>
+              <span className="text-[10px] font-semibold text-teal-400">Sent</span>
             </div>
             <div className="p-2.5 rounded-lg border border-hairline bg-panel flex items-start justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
-                <div className="p-1 rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                <div className="p-1 rounded-md bg-[#21212B] text-slate-300 border border-hairline">
                   <Clock className="h-3.5 w-3.5" />
                 </div>
                 <div>
@@ -206,10 +205,10 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
         {activeTab === 'tags' && (
           <div className="space-y-2 text-xs">
             <div className="flex flex-wrap gap-1.5 p-2.5 rounded-lg border border-hairline bg-panel">
-              <span className="px-2 py-0.5 rounded bg-violet-500/15 text-violet-600 dark:text-violet-400 font-bold text-[11px]">VIP Client</span>
-              <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">High Value</span>
-              <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold text-[11px]">Q3 Campaign</span>
-              <span className="px-2 py-0.5 rounded bg-sky-500/15 text-sky-600 dark:text-sky-400 font-bold text-[11px]">Annual Retainer</span>
+              <span className="px-2 py-0.5 rounded border border-hairline text-slate-300 font-semibold text-[11px]">VIP Client</span>
+              <span className="px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/30 font-semibold text-[11px]">High Value</span>
+              <span className="px-2 py-0.5 rounded border border-hairline text-slate-300 font-semibold text-[11px]">Q3 Campaign</span>
+              <span className="px-2 py-0.5 rounded border border-hairline text-slate-300 font-semibold text-[11px]">Annual Retainer</span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               <div className="p-2 rounded-lg border border-hairline bg-canvas/40">
@@ -218,7 +217,7 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
               </div>
               <div className="p-2 rounded-lg border border-hairline bg-canvas/40">
                 <span className="text-muted block text-[10px]">Lifetime Value</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">₦18,400,000</span>
+                <span className="font-bold text-teal-400">₦18,400,000</span>
               </div>
             </div>
           </div>
@@ -231,14 +230,14 @@ function Customer360Mockup({ onOpenDemo }: { onOpenDemo?: () => void }) {
                 <p className="font-semibold text-ink">Invoice #INV-1042</p>
                 <p className="text-[10px] text-muted">Due in 14 days · Brand Strategy</p>
               </div>
-              <span className="font-bold text-accent">₦4,800,000</span>
+              <span className="font-bold text-slate-200">₦4,800,000</span>
             </div>
             <div className="p-2.5 rounded-lg border border-hairline bg-panel flex items-center justify-between">
               <div>
                 <p className="font-semibold text-ink">Invoice #INV-1020</p>
                 <p className="text-[10px] text-muted">Paid on Jul 10 · Design System</p>
               </div>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">₦12,000,000 (Paid)</span>
+              <span className="font-bold text-teal-400">₦12,000,000 (Paid)</span>
             </div>
           </div>
         )}
@@ -285,13 +284,13 @@ function Customer360Modal({
           {/* Modal Header */}
           <div className="flex items-center justify-between p-4 sm:p-5 border-b border-hairline bg-canvas/60">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white font-bold text-base shadow-soft">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#221F33] text-[#A29BFE] font-bold text-base shadow-soft border border-hairline">
                 AS
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-bold text-ink">Acme Studio</h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/30">
                     Active Retainer
                   </span>
                 </div>
@@ -305,7 +304,7 @@ function Customer360Modal({
               <button
                 type="button"
                 onClick={onGoToAuth}
-                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-accent text-accent-fg font-medium text-xs shadow-soft hover:bg-accent-hover transition-all"
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-accent text-white font-semibold text-xs shadow-soft hover:bg-accent-hover transition-all"
               >
                 Try In Workspace <ArrowRight className="w-3.5 h-3.5" />
               </button>
@@ -323,11 +322,11 @@ function Customer360Modal({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 border-b border-hairline bg-canvas/30 text-xs">
             <div className="p-2.5 rounded-xl border border-hairline bg-panel">
               <span className="text-muted block text-[10px]">Total Revenue</span>
-              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">₦18,400,000</span>
+              <span className="text-sm font-bold text-teal-400">₦18,400,000</span>
             </div>
             <div className="p-2.5 rounded-xl border border-hairline bg-panel">
               <span className="text-muted block text-[10px]">Pending Invoices</span>
-              <span className="text-sm font-bold text-accent">₦4,800,000 (#INV-1042)</span>
+              <span className="text-sm font-bold text-slate-200">₦4,800,000 (#INV-1042)</span>
             </div>
             <div className="p-2.5 rounded-xl border border-hairline bg-panel">
               <span className="text-muted block text-[10px]">Active Pipeline</span>
@@ -335,7 +334,7 @@ function Customer360Modal({
             </div>
             <div className="p-2.5 rounded-xl border border-hairline bg-panel">
               <span className="text-muted block text-[10px]">Account Health</span>
-              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <span className="text-sm font-bold text-teal-400 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" /> 98% (Excellent)
               </span>
             </div>
@@ -348,7 +347,7 @@ function Customer360Modal({
               onClick={() => setActiveTab('timeline')}
               className={`pb-2.5 px-2 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
                 activeTab === 'timeline'
-                  ? 'border-accent text-accent'
+                  ? 'border-accent text-white'
                   : 'border-transparent text-muted hover:text-ink'
               }`}
             >
@@ -359,7 +358,7 @@ function Customer360Modal({
               onClick={() => setActiveTab('invoices')}
               className={`pb-2.5 px-2 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
                 activeTab === 'invoices'
-                  ? 'border-accent text-accent'
+                  ? 'border-accent text-white'
                   : 'border-transparent text-muted hover:text-ink'
               }`}
             >
@@ -370,7 +369,7 @@ function Customer360Modal({
               onClick={() => setActiveTab('deals')}
               className={`pb-2.5 px-2 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
                 activeTab === 'deals'
-                  ? 'border-accent text-accent'
+                  ? 'border-accent text-white'
                   : 'border-transparent text-muted hover:text-ink'
               }`}
             >
@@ -381,7 +380,7 @@ function Customer360Modal({
               onClick={() => setActiveTab('notes')}
               className={`pb-2.5 px-2 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
                 activeTab === 'notes'
-                  ? 'border-accent text-accent'
+                  ? 'border-accent text-white'
                   : 'border-transparent text-muted hover:text-ink'
               }`}
             >
@@ -399,7 +398,7 @@ function Customer360Modal({
                 </div>
                 <div className="space-y-2.5">
                   <div className="p-3 rounded-xl border border-hairline bg-canvas/40 flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <div className="p-2 rounded-lg bg-teal-500/10 text-teal-400 shrink-0">
                       <CreditCard className="w-4 h-4" />
                     </div>
                     <div className="flex-1 text-xs">
@@ -411,7 +410,7 @@ function Customer360Modal({
                     </div>
                   </div>
                   <div className="p-3 rounded-xl border border-hairline bg-canvas/40 flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 shrink-0">
+                    <div className="p-2 rounded-lg bg-[#21212B] text-slate-300 border border-hairline shrink-0">
                       <Clock className="w-4 h-4" />
                     </div>
                     <div className="flex-1 text-xs">
@@ -423,7 +422,7 @@ function Customer360Modal({
                     </div>
                   </div>
                   <div className="p-3 rounded-xl border border-hairline bg-canvas/40 flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-300 shrink-0">
                       <KanbanSquare className="w-4 h-4" />
                     </div>
                     <div className="flex-1 text-xs">
@@ -446,8 +445,8 @@ function Customer360Modal({
                     <span className="text-muted">Issued Jul 22, 2026 · Due in 14 days</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-accent text-sm block">$4,800</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-accent-soft text-accent">Sent</span>
+                    <span className="font-bold text-slate-200 text-sm block">$4,800</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-hairline text-slate-300">Sent</span>
                   </div>
                 </div>
                 <div className="p-3 rounded-xl border border-hairline bg-canvas/40 flex items-center justify-between">
@@ -456,8 +455,8 @@ function Customer360Modal({
                     <span className="text-muted">Paid on Jul 10, 2026</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm block">$12,000</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">Paid</span>
+                    <span className="font-bold text-teal-400 text-sm block">$12,000</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-500/10 text-teal-400 border border-teal-500/30">Paid</span>
                   </div>
                 </div>
               </div>
@@ -468,10 +467,10 @@ function Customer360Modal({
                 <div className="p-3.5 rounded-xl border border-hairline bg-canvas/40 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-ink text-sm">Q3 Brand Strategy Retainer</span>
-                    <span className="font-bold text-accent">$12,000</span>
+                    <span className="font-bold text-teal-400">$12,000</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted">
-                    <span className="px-2 py-0.5 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400 text-[10px] font-semibold">
+                    <span className="px-2 py-0.5 rounded border border-hairline text-slate-300 text-[10px] font-semibold">
                       Stage: Contract Signed
                     </span>
                     <span>Priority: High</span>
@@ -492,7 +491,7 @@ function Customer360Modal({
                   />
                   <button
                     type="submit"
-                    className="px-3 py-2 rounded-xl bg-accent text-accent-fg font-semibold text-xs shadow-soft hover:bg-accent-hover flex items-center gap-1 shrink-0"
+                    className="px-3 py-2 rounded-xl bg-accent text-white font-semibold text-xs shadow-soft hover:bg-accent-hover flex items-center gap-1 shrink-0"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add Note
                   </button>
@@ -518,7 +517,7 @@ function Customer360Modal({
             <button
               type="button"
               onClick={onGoToAuth}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-accent-fg font-semibold text-xs shadow-soft hover:bg-accent-hover transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-white font-semibold text-xs shadow-soft hover:bg-accent-hover transition-all"
             >
               Start Free Workspace <ArrowRight className="w-4 h-4" />
             </button>
@@ -535,6 +534,29 @@ export default function Landing() {
   const [modal360Open, setModal360Open] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
+  // Enforce dark mode on the public landing page while preserving user preference in the main app
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    const previousHadDark = root.classList.contains('dark');
+    root.classList.add('dark');
+
+    return () => {
+      try {
+        const stored = localStorage.getItem('theme');
+        if (stored === 'light') {
+          root.classList.remove('dark');
+        } else if (stored === 'dark') {
+          root.classList.add('dark');
+        } else if (!previousHadDark) {
+          root.classList.remove('dark');
+        }
+      } catch {
+        if (!previousHadDark) root.classList.remove('dark');
+      }
+    };
+  }, []);
+
   const goToAuth = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -547,7 +569,10 @@ export default function Landing() {
   );
 
   return (
-    <>
+    <div
+      className="dark min-h-screen bg-canvas text-ink selection:bg-[#7C5CFC]/30 selection:text-white"
+      style={{ colorScheme: 'dark' }}
+    >
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: navigating ? 0 : 1 }}
@@ -559,29 +584,28 @@ export default function Landing() {
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent shadow-soft">
-                <LayoutDashboard className="h-5 w-5 text-accent-fg" />
+                <LayoutDashboard className="h-5 w-5 text-white" />
               </div>
-              <span className="text-[18px] leading-[27px] text-justify font-semibold tracking-tight">Ledgerly</span>
+              <span className="text-[18px] leading-[27px] text-justify font-semibold tracking-tight text-white">Ledgerly</span>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-3 sm:gap-4">
               <a
                 href="#features"
-                className="hidden text-sm font-medium text-muted transition-colors duration-300 hover:text-ink sm:block"
+                className="hidden text-sm font-medium text-muted transition-colors duration-300 hover:text-white sm:block"
               >
                 Features
               </a>
-              <ThemeToggle className="text-[15px] h-[33.6px] w-[34.6px] text-center" />
               <a
                 href="/auth"
                 onClick={goToAuth}
-                className="h-[21px] pl-0 text-[14px] leading-[19px] font-medium text-muted transition-colors duration-300 hover:text-ink flex items-center"
+                className="text-sm font-medium text-muted transition-colors duration-300 hover:text-white px-1.5 py-1"
               >
                 Sign in
               </a>
               <a
                 href="/auth"
                 onClick={goToAuth}
-                className="inline-flex items-center justify-center rounded-full bg-accent pt-[8px] pb-[8px] pl-[15px] pr-[15px] ml-[1px] mr-[1px] mt-0 mb-0 w-[95.65px] h-[38px] text-center text-[12px] font-normal leading-[20px] text-accent-fg shadow-soft transition-all duration-300 hover:bg-accent-hover hover:shadow-lift"
+                className="inline-flex items-center justify-center rounded-full bg-accent hover:bg-accent-hover pt-[8px] pb-[8px] pl-[15px] pr-[15px] ml-[1px] mr-[1px] mt-0 mb-0 w-[95.65px] h-[38px] text-center text-[12px] font-normal leading-[20px] text-white shadow-soft transition-all duration-300 hover:shadow-lift"
               >
                 Get started
               </a>
@@ -596,21 +620,21 @@ export default function Landing() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: easeOut }}
-              className="mb-5 inline-flex flex-wrap items-center justify-center gap-3 rounded-full border border-purple-100 dark:border-purple-900/40 bg-purple-50/60 dark:bg-purple-950/40 px-4 py-1.5 text-xs font-medium text-slate-700 dark:text-purple-200/90 shadow-xs backdrop-blur-sm"
+              className="mb-5 inline-flex flex-wrap items-center justify-center gap-3 rounded-full border border-hairline bg-panel px-4 py-1.5 text-xs font-medium text-[#9CA3AF] shadow-xs backdrop-blur-sm"
             >
               <div className="flex -space-x-2 overflow-hidden shrink-0">
                 <img
-                  className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+                  className="inline-block h-6 w-6 rounded-full ring-2 ring-[#0F0F12] object-cover"
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80"
                   alt="User Avatar"
                 />
                 <img
-                  className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+                  className="inline-block h-6 w-6 rounded-full ring-2 ring-[#0F0F12] object-cover"
                   src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80"
                   alt="User Avatar"
                 />
                 <img
-                  className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+                  className="inline-block h-6 w-6 rounded-full ring-2 ring-[#0F0F12] object-cover"
                   src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80"
                   alt="User Avatar"
                 />
@@ -624,7 +648,7 @@ export default function Landing() {
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 </div>
                 <span>
-                  Loved by <strong className="font-semibold text-slate-900 dark:text-white">1,000+</strong> freelancers & business owners
+                  Loved by <strong className="font-semibold text-white">1,000+</strong> freelancers & business owners
                 </span>
               </div>
             </motion.div>
@@ -632,16 +656,16 @@ export default function Landing() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: easeOut, delay: 0.05 }}
-              className="mx-auto max-w-4xl text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-slate-900 dark:text-white sm:text-5xl md:text-6xl font-['Plus_Jakarta_Sans',sans-serif]"
+              className="mx-auto max-w-4xl text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl md:text-6xl font-['Plus_Jakarta_Sans',sans-serif]"
             >
-              Everything you need to run your business in{' '}
-              <span className="text-[#6D5FFA] dark:text-[#8174FF]">one Workspace</span>.
+              Everything you need to run your business in one{' '}
+              <span className="bg-gradient-to-r from-[#7C5CFC] to-[#A29BFE] bg-clip-text text-transparent font-extrabold">Workspace</span>.
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: easeOut, delay: 0.15 }}
-              className="mx-auto mt-4 max-w-2xl text-pretty text-base sm:text-lg leading-relaxed text-muted"
+              className="mx-auto mt-4 max-w-2xl text-pretty text-base sm:text-lg leading-relaxed text-[#9CA3AF]"
             >
               Manage clients, projects, invoices, contacts and communication without switching between five different apps.
             </motion.p>
@@ -655,9 +679,9 @@ export default function Landing() {
               {heroPills.map((pill) => (
                 <span
                   key={pill}
-                  className="inline-flex items-center gap-2 rounded-full border border-purple-200/70 dark:border-purple-800/40 bg-white/80 dark:bg-purple-950/30 px-4 py-1.5 text-xs font-semibold text-purple-900 dark:text-purple-200 shadow-xs backdrop-blur-sm"
+                  className="inline-flex items-center gap-2 rounded-full border border-hairline bg-panel/70 px-4 py-1.5 text-xs font-semibold text-slate-300 shadow-xs backdrop-blur-sm"
                 >
-                  <Check className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400 font-bold" />
+                  <Check className="h-3.5 w-3.5 text-teal-400 font-bold" />
                   {pill}
                 </span>
               ))}
@@ -673,14 +697,14 @@ export default function Landing() {
               <a
                 href="/auth"
                 onClick={goToAuth}
-                className="group flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 font-semibold text-accent-fg shadow-md transition-all duration-300 hover:bg-accent-hover hover:shadow-lift hover:scale-105"
+                className="group flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 font-semibold text-white shadow-md transition-all duration-300 hover:bg-accent-hover hover:shadow-lift hover:scale-105"
               >
                 Start free
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
               </a>
               <a
                 href="#features"
-                className="rounded-full border border-hairline-strong bg-panel px-7 py-3.5 font-semibold text-ink-soft shadow-soft transition-all duration-300 hover:border-accent hover:text-ink"
+                className="rounded-full border border-hairline bg-panel/80 px-7 py-3.5 font-semibold text-slate-300 shadow-soft transition-all duration-300 hover:border-slate-500 hover:text-white"
               >
                 See what&apos;s inside
               </a>
@@ -849,16 +873,16 @@ export default function Landing() {
             className="flex flex-col items-center justify-center gap-2"
           >
             <div className="flex items-center justify-center gap-3 w-full max-w-md">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-300 dark:via-purple-700/60 to-transparent" />
-              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-100/90 dark:bg-purple-950/80 border border-purple-200/90 dark:border-purple-800/80 text-xs font-extrabold text-violet-700 dark:text-violet-300 uppercase tracking-wider shadow-sm">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> Take a peek under the hood
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-hairline to-transparent" />
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-hairline bg-panel/60 text-xs font-semibold text-slate-300 uppercase tracking-wider shadow-sm">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Take a peek under the hood
               </span>
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-300 dark:via-purple-700/60 to-transparent" />
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-hairline to-transparent" />
             </div>
             <motion.div
               animate={{ y: [0, 4, 0] }}
               transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-              className="mt-0.5 flex items-center justify-center text-purple-500 dark:text-purple-400"
+              className="mt-0.5 flex items-center justify-center text-slate-400"
             >
               <ChevronDown className="w-5 h-5" />
             </motion.div>
@@ -872,35 +896,31 @@ export default function Landing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.6, ease: easeOut }}
-            className="rounded-3xl border border-purple-800/50 bg-gradient-to-br from-[#180E33] via-[#140C2C] to-[#0F0821] p-6 sm:p-10 shadow-2xl relative overflow-hidden text-slate-100"
+            className="rounded-3xl border border-hairline bg-panel p-6 sm:p-10 shadow-2xl relative overflow-hidden text-slate-100"
           >
-            {/* Background Ambient Glow */}
-            <div className="pointer-events-none absolute -right-20 -top-20 w-80 h-80 rounded-full bg-violet-600/20 blur-3xl" />
-            <div className="pointer-events-none absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-indigo-600/20 blur-3xl" />
-
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
               <div className="lg:col-span-5 space-y-4">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/30 px-3 py-1 text-xs font-bold text-violet-300">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-canvas/60 px-3 py-1 text-xs font-semibold text-[#9CA3AF]">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Spotlight Feature
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
                   Customer 360 View: Your Client&apos;s Entire Story in One Place
                 </h3>
-                <p className="text-sm leading-relaxed text-purple-200/80">
-                  Stop hunting through email threads or separate tabs. Instantly view total revenue, active deals, invoice statuses, custom tags, and complete activity history for clients like <strong className="text-amber-300 font-bold">Acme Studio</strong>.
+                <p className="text-sm leading-relaxed text-[#9CA3AF]">
+                  Stop hunting through email threads or separate tabs. Instantly view total revenue, active deals, invoice statuses, custom tags, and complete activity history for clients like <strong className="text-slate-200 font-bold">Acme Studio</strong>.
                 </p>
                 <div className="pt-2 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setModal360Open(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all hover:scale-105"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent hover:bg-accent-hover text-white font-bold text-xs shadow-md transition-all hover:scale-105"
                   >
                     <Sparkles className="w-4 h-4 text-amber-300" /> Try Customer 360 Demo
                   </button>
                   <button
                     type="button"
                     onClick={goToAuth}
-                    className="flex items-center gap-1 text-xs font-semibold text-purple-300 hover:text-white transition-colors px-3 py-2"
+                    className="flex items-center gap-1 text-xs font-semibold text-accent hover:text-[#9D8CFF] transition-colors px-3 py-2"
                   >
                     Explore Workspace →
                   </button>
@@ -922,7 +942,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: easeOut }}
-              className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-3.5 py-1 text-xs font-bold text-amber-600 dark:text-amber-400 mb-3"
+              className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-panel px-3.5 py-1 text-xs font-semibold text-[#9CA3AF] mb-3 shadow-xs"
             >
               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
               Trusted by 1,000+ Creators
@@ -932,7 +952,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: easeOut, delay: 0.05 }}
-              className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
+              className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
             >
               Built for freelancers, trusted by pros
             </motion.h2>
@@ -941,7 +961,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
-              className="mt-3.5 text-base sm:text-lg text-muted leading-relaxed"
+              className="mt-3.5 text-base sm:text-lg text-[#9CA3AF] leading-relaxed"
             >
               See how independent creators and consultants saved hours every week.
             </motion.p>
@@ -958,7 +978,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: easeOut }}
-              className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
+              className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
             >
               The little details other tools skip
             </motion.h2>
@@ -967,7 +987,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
-              className="mt-3.5 text-base sm:text-lg text-muted leading-relaxed"
+              className="mt-3.5 text-base sm:text-lg text-[#9CA3AF] leading-relaxed"
             >
               How Ledgerly compares to standard tools on the features that actually matter.
             </motion.p>
@@ -982,13 +1002,13 @@ export default function Landing() {
           >
             {/* Desktop / Tablet Table Header */}
             <div className="hidden md:grid md:grid-cols-12 gap-4 pb-4 mb-4 border-b border-hairline items-center text-sm font-bold">
-              <div className="col-span-4 text-muted uppercase tracking-wider text-xs">Feature / Capability</div>
-              <div className="col-span-4 flex items-center gap-2 text-accent font-extrabold text-base px-4 py-2 rounded-xl bg-accent/10 border border-accent/20">
-                <Sparkles className="w-4 h-4 text-accent" />
+              <div className="col-span-4 text-[#9CA3AF] uppercase tracking-wider text-xs">Feature / Capability</div>
+              <div className="col-span-4 flex items-center gap-2 text-white font-extrabold text-base px-4 py-2 rounded-xl bg-[#22222B] border border-hairline">
+                <Sparkles className="w-4 h-4 text-teal-400" />
                 <span>Ledgerly</span>
-                <span className="ml-auto text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-accent text-accent-fg">Built Better</span>
+                <span className="ml-auto text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/30">Built Better</span>
               </div>
-              <div className="col-span-4 text-muted font-semibold text-base px-4 py-2">
+              <div className="col-span-4 text-[#9CA3AF] font-semibold text-base px-4 py-2">
                 Other Tools
               </div>
             </div>
@@ -1001,28 +1021,28 @@ export default function Landing() {
                   className="rounded-2xl border border-hairline/60 bg-canvas/40 md:bg-transparent md:border-none p-4 md:p-0 md:grid md:grid-cols-12 md:gap-4 md:items-center transition-all duration-200 hover:bg-canvas/80 md:hover:bg-transparent"
                 >
                   {/* Category Name */}
-                  <div className="md:col-span-4 font-bold text-slate-900 dark:text-white text-sm sm:text-base mb-3 md:mb-0 flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-accent md:hidden"></span>
+                  <div className="md:col-span-4 font-bold text-white text-sm sm:text-base mb-3 md:mb-0 flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-slate-500 md:hidden"></span>
                     {f.category}
                   </div>
 
                   {/* Ledgerly Feature Box */}
-                  <div className="md:col-span-4 rounded-xl bg-accent-soft/80 dark:bg-accent/10 border border-accent/25 p-3.5 mb-2.5 md:mb-0 flex items-start gap-3 shadow-xs">
-                    <CheckCircle2 className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                  <div className="md:col-span-4 rounded-xl bg-[#121217] border border-hairline p-3.5 mb-2.5 md:mb-0 flex items-start gap-3 shadow-xs">
+                    <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-accent md:hidden block mb-0.5">Ledgerly</span>
-                      <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 leading-snug">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400 md:hidden block mb-0.5">Ledgerly</span>
+                      <p className="text-xs sm:text-sm font-semibold text-slate-100 leading-snug">
                         {f.ledgerly}
                       </p>
                     </div>
                   </div>
 
                   {/* Other Tools Box */}
-                  <div className="md:col-span-4 rounded-xl bg-slate-100/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60 p-3.5 flex items-start gap-3">
-                    <XCircle className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" />
+                  <div className="md:col-span-4 rounded-xl bg-[#121217] border border-hairline p-3.5 flex items-start gap-3">
+                    <XCircle className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 md:hidden block mb-0.5">Other Tools</span>
-                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-snug">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] md:hidden block mb-0.5">Other Tools</span>
+                      <p className="text-xs sm:text-sm text-[#9CA3AF] leading-snug">
                         {f.others}
                       </p>
                     </div>
@@ -1041,7 +1061,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: easeOut }}
-              className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
+              className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
             >
               Up and running in 3 simple steps
             </motion.h2>
@@ -1050,7 +1070,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
-              className="mt-3.5 text-base sm:text-lg text-muted leading-relaxed"
+              className="mt-3.5 text-base sm:text-lg text-[#9CA3AF] leading-relaxed"
             >
               No complex setup or weeks of learning curves.
             </motion.p>
@@ -1064,16 +1084,16 @@ export default function Landing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, ease: easeOut, delay: idx * 0.1 }}
-                className="rounded-3xl border border-hairline bg-panel p-6 sm:p-8 shadow-soft flex flex-col justify-between hover:border-accent/40 transition-all duration-300 hover:shadow-lift group relative overflow-hidden"
+                className="rounded-3xl border border-hairline bg-panel p-6 sm:p-8 shadow-soft flex flex-col justify-between hover:border-slate-500 transition-all duration-300 hover:shadow-lift group relative overflow-hidden"
               >
                 <div>
-                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent font-extrabold text-lg sm:text-xl border border-accent/20 mb-6 shadow-xs group-hover:scale-105 transition-transform">
+                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-white font-extrabold text-lg sm:text-xl border border-accent/40 mb-6 shadow-sm group-hover:scale-105 transition-transform">
                     {step.step}
                   </span>
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-2.5 group-hover:text-accent transition-colors">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-2.5 group-hover:text-slate-200 transition-colors">
                     {step.title}
                   </h3>
-                  <p className="text-sm text-muted leading-relaxed">
+                  <p className="text-sm text-[#9CA3AF] leading-relaxed">
                     {step.text}
                   </p>
                 </div>
@@ -1090,7 +1110,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: easeOut }}
-              className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
+              className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-['Plus_Jakarta_Sans',sans-serif]"
             >
               Frequently Asked Questions
             </motion.h2>
@@ -1099,7 +1119,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
-              className="mt-3.5 text-base sm:text-lg text-muted leading-relaxed"
+              className="mt-3.5 text-base sm:text-lg text-[#9CA3AF] leading-relaxed"
             >
               Everything you need to know about getting started.
             </motion.p>
@@ -1122,12 +1142,12 @@ export default function Landing() {
                   <button
                     type="button"
                     onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                    className="w-full px-6 py-4 sm:py-5 flex items-center justify-between gap-4 text-left font-bold text-slate-900 dark:text-white text-base sm:text-lg hover:text-accent transition-colors"
+                    className="w-full px-6 py-4 sm:py-5 flex items-center justify-between gap-4 text-left font-bold text-white text-base sm:text-lg hover:text-slate-200 transition-colors"
                   >
                     <span>{faq.q}</span>
                     <ChevronDown
                       className={`w-5 h-5 shrink-0 transition-transform duration-300 ${
-                        isOpen ? 'rotate-180 text-accent' : 'text-slate-400'
+                        isOpen ? 'rotate-180 text-teal-400' : 'text-[#9CA3AF]'
                       }`}
                     />
                   </button>
@@ -1141,7 +1161,7 @@ export default function Landing() {
                         transition={{ duration: 0.28, ease: easeOut }}
                         className="overflow-hidden"
                       >
-                        <div className="px-6 pb-5 pt-1 text-sm sm:text-base leading-relaxed text-muted border-t border-hairline/50">
+                        <div className="px-6 pb-5 pt-1 text-sm sm:text-base leading-relaxed text-[#9CA3AF] border-t border-hairline/50">
                           {faq.a}
                         </div>
                       </motion.div>
@@ -1160,7 +1180,7 @@ export default function Landing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.6, ease: easeOut }}
-            className="text-balance text-3xl font-bold tracking-tight text-ink md:text-5xl"
+            className="text-balance text-3xl font-bold tracking-tight text-white md:text-5xl"
           >
             Ready to tidy up your business?
           </motion.h2>
@@ -1171,16 +1191,16 @@ export default function Landing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.6, ease: easeOut, delay: 0.08 }}
-            className="mt-6 mb-2 inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-4 py-2 rounded-full bg-purple-50/90 dark:bg-purple-950/60 border border-purple-200/80 dark:border-purple-800/60 shadow-xs max-w-full"
+            className="mt-6 mb-2 inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-4 py-2 rounded-full border border-hairline bg-panel/60 shadow-xs max-w-full"
           >
-            <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-300 mr-0.5 shrink-0">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-300 mr-0.5 shrink-0">
               Built for:
             </span>
             {['Freelancers', 'Agencies', 'Consultants', 'Designers', 'Developers', 'Coaches'].map((role, i, arr) => (
-              <span key={role} className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <span key={role} className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-300">
                 <span>{role}</span>
                 {i < arr.length - 1 && (
-                  <span className="text-purple-400 dark:text-purple-600 font-bold">•</span>
+                  <span className="text-slate-600 font-bold">•</span>
                 )}
               </span>
             ))}
@@ -1191,7 +1211,7 @@ export default function Landing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.6, ease: easeOut, delay: 0.12 }}
-            className="mt-3 text-lg text-muted"
+            className="mt-3 text-lg text-[#9CA3AF]"
           >
             Create your workspace in under a minute.
           </motion.p>
@@ -1202,7 +1222,7 @@ export default function Landing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.6, ease: easeOut, delay: 0.2 }}
-            className="group mt-9 inline-flex items-center gap-2 rounded-full bg-accent px-8 py-4 text-lg font-medium text-accent-fg shadow-soft transition-all duration-300 hover:bg-accent-hover hover:shadow-lift"
+            className="group mt-9 inline-flex items-center gap-2 rounded-full bg-accent px-8 py-4 text-lg font-medium text-white shadow-soft transition-all duration-300 hover:bg-accent-hover hover:shadow-lift"
           >
             Get started free
             <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5" />
@@ -1211,19 +1231,19 @@ export default function Landing() {
 
         {/* Footer */}
         <footer className="border-t border-hairline py-8">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 text-sm text-muted md:flex-row">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 text-sm text-[#9CA3AF] md:flex-row">
             <p>© {new Date().getFullYear()} Ledgerly. Built for tiny teams.</p>
             <div className="flex items-center gap-5">
-              <Link to="/terms" className="transition-colors duration-300 hover:text-ink font-medium">
+              <Link to="/terms" className="transition-colors duration-300 hover:text-white font-medium">
                 Terms of Use
               </Link>
-              <Link to="/privacy" className="transition-colors duration-300 hover:text-ink font-medium">
+              <Link to="/privacy" className="transition-colors duration-300 hover:text-white font-medium">
                 Privacy Policy
               </Link>
-              <Link to="/auth" className="transition-colors duration-300 hover:text-ink">
+              <Link to="/auth" className="transition-colors duration-300 hover:text-white">
                 Sign in
               </Link>
-              <a href="#features" className="transition-colors duration-300 hover:text-ink">
+              <a href="#features" className="transition-colors duration-300 hover:text-white">
                 Features
               </a>
             </div>
@@ -1251,6 +1271,6 @@ export default function Landing() {
           />
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }

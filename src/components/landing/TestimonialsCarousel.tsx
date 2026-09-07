@@ -117,10 +117,10 @@ export function TestimonialsCarousel() {
       {/* Top Header / Navigation Controls */}
       <div className="flex items-center justify-between mb-6 px-1 sm:px-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-100/80 dark:bg-purple-950/80 px-3 py-1 rounded-full border border-purple-200 dark:border-purple-800">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] bg-transparent px-3 py-1 rounded-full border border-[#2A2A36]">
             {currentIndex + 1} of {total} Stories
           </span>
-          <span className="hidden sm:inline text-xs text-muted font-medium">
+          <span className="hidden sm:inline text-xs text-[#9CA3AF] font-medium">
             (Auto-playing • Hover to pause)
           </span>
         </div>
@@ -131,17 +131,17 @@ export function TestimonialsCarousel() {
             type="button"
             onClick={prevSlide}
             aria-label="Previous testimonial"
-            className="p-2.5 rounded-xl border border-hairline bg-panel hover:bg-white dark:hover:bg-slate-800 text-ink shadow-sm hover:shadow-md transition-all active:scale-95 group"
+            className="p-2.5 rounded-xl border border-[#2A2A36] bg-[#18181F] hover:bg-[#21212B] text-slate-200 shadow-sm transition-all active:scale-95 group"
           >
-            <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-slate-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" />
+            <ChevronLeft className="w-5 h-5 text-[#9CA3AF] group-hover:text-white transition-colors" />
           </button>
           <button
             type="button"
             onClick={nextSlide}
             aria-label="Next testimonial"
-            className="p-2.5 rounded-xl border border-hairline bg-panel hover:bg-white dark:hover:bg-slate-800 text-ink shadow-sm hover:shadow-md transition-all active:scale-95 group"
+            className="p-2.5 rounded-xl border border-[#2A2A36] bg-[#18181F] hover:bg-[#21212B] text-slate-200 shadow-sm transition-all active:scale-95 group"
           >
-            <ChevronRight className="w-5 h-5 text-slate-700 dark:text-slate-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" />
+            <ChevronRight className="w-5 h-5 text-[#9CA3AF] group-hover:text-white transition-colors" />
           </button>
         </div>
       </div>
@@ -159,13 +159,10 @@ export function TestimonialsCarousel() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: -12 }}
                 transition={{ duration: 0.45, ease: easeOut }}
-                className={`rounded-3xl border border-hairline bg-panel p-6 sm:p-7 shadow-soft flex flex-col justify-between hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 hover:shadow-lift group relative overflow-hidden ${
+                className={`rounded-3xl border border-[#2A2A36] bg-[#18181F] p-6 sm:p-7 shadow-sm flex flex-col justify-between hover:border-[#383846] transition-all duration-300 group relative overflow-hidden ${
                   isLgHidden ? 'hidden lg:flex' : isMdHidden ? 'hidden md:flex' : 'flex'
                 }`}
               >
-                {/* Subtle top gradient accent */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500/0 via-purple-500/40 to-violet-500/0 group-hover:via-purple-500 transition-all duration-500" />
-
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-1">
@@ -173,36 +170,36 @@ export function TestimonialsCarousel() {
                         <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
                       ))}
                     </div>
-                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-accent-soft text-accent border border-accent/20">
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/30">
                       {t.highlight}
                     </span>
                   </div>
-                  <p className="text-sm sm:text-base leading-relaxed text-ink-soft dark:text-slate-200 font-normal italic">
+                  <p className="text-sm sm:text-base leading-relaxed text-slate-200 font-normal italic">
                     &ldquo;{t.quote}&rdquo;
                   </p>
                 </div>
 
                 {/* Profile Photo & Author Info */}
-                <div className="mt-6 pt-5 border-t border-hairline flex items-center gap-3.5">
+                <div className="mt-6 pt-5 border-t border-[#2A2A36] flex items-center gap-3.5">
                   {!imageErrors[t.id] ? (
                     <img
                       src={t.avatarUrl}
                       alt={t.name}
                       onError={() => handleImageError(t.id)}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-purple-200 dark:border-purple-800 shadow-md shrink-0 group-hover:scale-105 transition-transform duration-300"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-[#2A2A36] shadow-md shrink-0 group-hover:scale-105 transition-transform duration-300"
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-purple-700 text-white font-bold text-sm shadow-md">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#221F33] text-[#A29BFE] font-bold text-sm shadow-md">
                       {t.avatarInitials}
                     </div>
                   )}
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                    <h4 className="text-sm font-bold text-white group-hover:text-slate-200 transition-colors">
                       {t.name}
                     </h4>
-                    <p className="text-xs text-muted font-medium">
-                      {t.role} • <span className="text-slate-500 dark:text-slate-400">{t.company}</span>
+                    <p className="text-xs text-[#9CA3AF] font-medium">
+                      {t.role} • <span className="text-[#9CA3AF]">{t.company}</span>
                     </p>
                   </div>
                 </div>
@@ -222,8 +219,8 @@ export function TestimonialsCarousel() {
             aria-label={`Go to testimonial ${idx + 1}`}
             className={`h-2.5 rounded-full transition-all duration-300 ${
               currentIndex === idx
-                ? 'w-8 bg-purple-600 dark:bg-purple-400 shadow-sm'
-                : 'w-2.5 bg-purple-200 dark:bg-purple-900/60 hover:bg-purple-300 dark:hover:bg-purple-800'
+                ? 'w-8 bg-[#7C5CFC] shadow-sm'
+                : 'w-2.5 bg-[#2A2A36] hover:bg-[#383846]'
             }`}
           />
         ))}
