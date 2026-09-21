@@ -1,0 +1,25 @@
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "0 8 */3 * *" # every 3 days at 08:00 UTC
+  workflow_dispatch: # lets you run it manually from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          TABLE_NAME: ${{ vars.SUPABASE_KEEPALIVE_TABLE }}
+        run: |
+          # Reads one row from a real table. With RLS on, the anon key may get
+          # an empty [] back, which is still a successful request (HTTP 200).
+          curl --fail --silent --show-error \
+            "$SUPABASE_URL/rest/v1/$TABLE_NAME?select=*&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY"
+          echo
+          echo "Ping OK at $(date -u)"
