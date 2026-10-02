@@ -37,7 +37,7 @@ function LedgerlyLogomark({ size = 56, className = '' }: { size?: number; classN
         width="22"
         height="22"
         rx="5"
-        stroke="#6C5CE7"
+        stroke="#7C5CFC"
         strokeWidth="3.2"
         fill="none"
       />
@@ -47,7 +47,7 @@ function LedgerlyLogomark({ size = 56, className = '' }: { size?: number; classN
         width="22"
         height="22"
         rx="5"
-        stroke="#6C5CE7"
+        stroke="#7C5CFC"
         strokeWidth="3.2"
         fill="none"
       />
@@ -57,7 +57,7 @@ function LedgerlyLogomark({ size = 56, className = '' }: { size?: number; classN
         width="22"
         height="22"
         rx="5"
-        stroke="#6C5CE7"
+        stroke="#7C5CFC"
         strokeWidth="3.2"
         fill="none"
       />
@@ -67,7 +67,7 @@ function LedgerlyLogomark({ size = 56, className = '' }: { size?: number; classN
         width="22"
         height="22"
         rx="5"
-        stroke="#6C5CE7"
+        stroke="#7C5CFC"
         strokeWidth="3.2"
         fill="none"
       />
@@ -198,14 +198,14 @@ export default function AuthPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="min-h-screen md:h-screen w-full flex flex-col md:grid md:grid-cols-[45%_55%] bg-[#FAFAFA] text-gray-900"
+      className="min-h-screen md:h-screen w-full flex flex-col md:grid md:grid-cols-[45%_55%] bg-[#0F0F12] text-white selection:bg-[#7C5CFC]/30 selection:text-white"
     >
       {/* Left Column / Brand Panel (~45% width) */}
-      <div className="w-full bg-[#110C24] text-white flex flex-col shrink-0 md:h-full relative overflow-hidden">
+      <div className="w-full bg-[#0F0F12] text-white flex flex-col shrink-0 md:h-full relative overflow-hidden md:border-r md:border-[#2A2A36]">
         {/* Decorative background element: oversized watermark echo of the logomark */}
         <div
           aria-hidden="true"
-          className="hidden md:block absolute w-[320px] h-[320px] rotate-[14deg] opacity-[0.09] pointer-events-none z-0 select-none"
+          className="hidden md:block absolute w-[320px] h-[320px] rotate-[14deg] opacity-[0.06] pointer-events-none z-0 select-none"
           style={{ top: '-10%', right: '-15%' }}
         >
           <LedgerlyLogomark
@@ -215,7 +215,7 @@ export default function AuthPage() {
         </div>
 
         {/* Mobile View (< 768px): Compact header with logomark + one-line headline only, no graphic */}
-        <div className="md:hidden px-5 py-4 flex items-center gap-3 border-b border-white/10 relative z-10">
+        <div className="md:hidden px-5 py-4 flex items-center gap-3 border-b border-[#2A2A36] relative z-10">
           <LedgerlyLogomark
             size={36}
             className="w-[36px] h-[36px] shrink-0"
@@ -243,7 +243,7 @@ export default function AuthPage() {
                 <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-white leading-tight">
                   Run your business like it's already grown up
                 </h1>
-                <p className="text-sm lg:text-base text-gray-300 leading-relaxed">
+                <p className="text-sm lg:text-base text-[#9CA3AF] leading-relaxed">
                   Contacts, invoices, and your workflow, in any currency, all in one workspace.
                 </p>
               </div>
@@ -272,10 +272,10 @@ export default function AuthPage() {
                 </svg>
               </div>
               <div className="space-y-0.5">
-                <div className="text-sm font-medium text-purple-200/90 tracking-tight">
+                <div className="text-sm font-semibold text-white tracking-tight">
                   ₦2.4m tracked this month
                 </div>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-[#9CA3AF]">
                   Sample workspace activity
                 </div>
               </div>
@@ -284,20 +284,20 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Right Column (~55% width): background #FAFAFA */}
-      <div className="w-full bg-[#FAFAFA] flex flex-col items-center justify-center p-6 sm:p-10 lg:p-16 overflow-y-auto md:h-full">
-        <div className="w-full max-w-md my-auto py-4">
+      {/* Right Column (~55% width): Charcoal Obsidian background */}
+      <div className="w-full bg-[#0F0F12] flex flex-col items-center justify-center p-6 sm:p-10 lg:p-16 overflow-y-auto md:h-full">
+        <div className="w-full max-w-md my-auto py-6 px-6 sm:px-8 bg-[#18181F] border border-[#2A2A36] rounded-2xl shadow-xl">
           {/* SUCCESS STATES */}
           {successState === 'signup_sent' && (
             <div className="text-center py-4">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto mb-5 text-emerald-600">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-5 text-emerald-400">
                 <MailCheck className="w-8 h-8" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-white mb-2">
                 Verify your email
               </h2>
-              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                We've sent a confirmation link to <strong className="font-semibold text-gray-900">{email}</strong>.
+              <p className="text-sm text-[#9CA3AF] mb-6 leading-relaxed">
+                We've sent a confirmation link to <strong className="font-semibold text-white">{email}</strong>.
                 Please check your inbox and click the link to verify your account.
               </p>
               <button
@@ -310,7 +310,7 @@ export default function AuthPage() {
                   setPassword('');
                   setBusinessNameInput('');
                 }}
-                className="w-full py-2.5 bg-[#6C5CE7] text-white font-semibold rounded-[8px] hover:bg-[#5b4cdb] transition-all shadow-sm"
+                className="w-full py-2.5 bg-[#7C5CFC] text-white font-semibold rounded-lg hover:bg-[#6C4AEB] transition-all shadow-md shadow-[#7C5CFC]/20"
               >
                 Back to Sign In
               </button>
@@ -319,14 +319,14 @@ export default function AuthPage() {
 
           {successState === 'reset_sent' && (
             <div className="text-center py-4">
-              <div className="w-16 h-16 rounded-2xl bg-violet-50 border border-violet-200 flex items-center justify-center mx-auto mb-5 text-[#6C5CE7]">
+              <div className="w-16 h-16 rounded-2xl bg-[#7C5CFC]/15 border border-[#7C5CFC]/30 flex items-center justify-center mx-auto mb-5 text-[#7C5CFC]">
                 <KeyRound className="w-8 h-8" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-white mb-2">
                 Check your inbox
               </h2>
-              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                We've sent password reset instructions to <strong className="font-semibold text-gray-900">{email}</strong>.
+              <p className="text-sm text-[#9CA3AF] mb-6 leading-relaxed">
+                We've sent password reset instructions to <strong className="font-semibold text-white">{email}</strong>.
                 Click the link in the email to set your new password.
               </p>
               <button
@@ -336,7 +336,7 @@ export default function AuthPage() {
                   setSuccessState(null);
                   switchMode('login');
                 }}
-                className="w-full py-2.5 bg-[#6C5CE7] text-white font-semibold rounded-[8px] hover:bg-[#5b4cdb] transition-all shadow-sm"
+                className="w-full py-2.5 bg-[#7C5CFC] text-white font-semibold rounded-lg hover:bg-[#6C4AEB] transition-all shadow-md shadow-[#7C5CFC]/20"
               >
                 Back to Sign In
               </button>
@@ -345,14 +345,14 @@ export default function AuthPage() {
 
           {successState === 'magic_link_sent' && (
             <div className="text-center py-4">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center mx-auto mb-5 text-indigo-600">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center mx-auto mb-5 text-indigo-400">
                 <Wand2 className="w-8 h-8" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-white mb-2">
                 Magic link sent!
               </h2>
-              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                Check your inbox at <strong className="font-semibold text-gray-900">{email}</strong> to sign in instantly without a password.
+              <p className="text-sm text-[#9CA3AF] mb-6 leading-relaxed">
+                Check your inbox at <strong className="font-semibold text-white">{email}</strong> to sign in instantly without a password.
               </p>
               <button
                 type="button"
@@ -361,7 +361,7 @@ export default function AuthPage() {
                   setSuccessState(null);
                   switchMode('login');
                 }}
-                className="w-full py-2.5 bg-[#6C5CE7] text-white font-semibold rounded-[8px] hover:bg-[#5b4cdb] transition-all shadow-sm"
+                className="w-full py-2.5 bg-[#7C5CFC] text-white font-semibold rounded-lg hover:bg-[#6C4AEB] transition-all shadow-md shadow-[#7C5CFC]/20"
               >
                 Back to Sign In
               </button>
@@ -373,15 +373,15 @@ export default function AuthPage() {
             <>
               {/* Main Sign In / Sign Up Underline Tabs */}
               {(mode === 'login' || mode === 'signup') && (
-                <div className="flex border-b border-gray-200 mb-8 gap-8">
+                <div className="flex border-b border-[#2A2A36] mb-6 gap-8">
                   <button
                     type="button"
                     id="auth-tab-login"
                     onClick={() => switchMode('login')}
                     className={`pb-3 text-base transition-colors relative ${
                       mode === 'login'
-                        ? 'font-medium text-gray-900 border-b-2 border-[#6C5CE7] -mb-[1px]'
-                        : 'text-gray-500 hover:text-gray-700'
+                        ? 'font-semibold text-white border-b-2 border-[#7C5CFC] -mb-[1px]'
+                        : 'text-[#9CA3AF] hover:text-white'
                     }`}
                   >
                     Sign In
@@ -392,8 +392,8 @@ export default function AuthPage() {
                     onClick={() => switchMode('signup')}
                     className={`pb-3 text-base transition-colors relative ${
                       mode === 'signup'
-                        ? 'font-medium text-gray-900 border-b-2 border-[#6C5CE7] -mb-[1px]'
-                        : 'text-gray-500 hover:text-gray-700'
+                        ? 'font-semibold text-white border-b-2 border-[#7C5CFC] -mb-[1px]'
+                        : 'text-[#9CA3AF] hover:text-white'
                     }`}
                   >
                     Sign Up
@@ -408,13 +408,13 @@ export default function AuthPage() {
                     type="button"
                     id="auth-back-to-login-forgot"
                     onClick={() => switchMode('login')}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#6C5CE7] mb-3 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#9CA3AF] hover:text-[#7C5CFC] mb-3 transition-colors"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     Back to Sign In
                   </button>
-                  <h2 className="text-xl font-bold text-gray-900">Reset Password</h2>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <h2 className="text-xl font-bold text-white">Reset Password</h2>
+                  <p className="text-xs text-[#9CA3AF] mt-1">
                     Enter your email address and we'll send you a link to reset your password.
                   </p>
                 </div>
@@ -427,18 +427,18 @@ export default function AuthPage() {
                     type="button"
                     id="auth-back-to-login-magic"
                     onClick={() => switchMode('login')}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#6C5CE7] mb-3 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#9CA3AF] hover:text-[#7C5CFC] mb-3 transition-colors"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     Back to Password Sign In
                   </button>
                   <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-xl font-bold text-gray-900">Magic Link Sign-In</h2>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 text-[#6C5CE7] border border-[#6C5CE7]/20">
+                    <h2 className="text-xl font-bold text-white">Magic Link Sign-In</h2>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#7C5CFC]/15 text-[#A29BFE] border border-[#7C5CFC]/30">
                       <Sparkles className="w-2.5 h-2.5" /> Passwordless
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-[#9CA3AF]">
                     Sign in instantly with a secure link sent directly to your email.
                   </p>
                 </div>
@@ -462,15 +462,15 @@ export default function AuthPage() {
 
                 {/* Email Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                  <label className="block text-sm font-medium text-slate-200 mb-1.5">Email</label>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/30 focus:border-[#6C5CE7] transition-all text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#121217] border border-[#2A2A36] rounded-lg text-white placeholder-[#9CA3AF]/60 focus:outline-none focus:ring-2 focus:ring-[#7C5CFC]/40 focus:border-[#7C5CFC] transition-all text-sm"
                       placeholder="you@company.com"
                     />
                   </div>
@@ -480,34 +480,34 @@ export default function AuthPage() {
                 {(mode === 'login' || mode === 'signup') && (
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-sm font-medium text-gray-700">Password</label>
+                      <label className="block text-sm font-medium text-slate-200">Password</label>
                       {mode === 'login' && (
                         <button
                           type="button"
                           id="auth-forgot-password-link"
                           onClick={() => switchMode('forgot')}
-                          className="text-xs font-semibold text-[#6C5CE7] hover:underline focus:outline-none"
+                          className="text-xs font-semibold text-[#7C5CFC] hover:text-[#9D8CFF] hover:underline focus:outline-none"
                         >
                           Forgot password?
                         </button>
                       )}
                     </div>
                     <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
                         minLength={mode === 'signup' ? 8 : 6}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/30 focus:border-[#6C5CE7] transition-all text-sm"
+                        className="w-full pl-10 pr-10 py-2.5 bg-[#121217] border border-[#2A2A36] rounded-lg text-white placeholder-[#9CA3AF]/60 focus:outline-none focus:ring-2 focus:ring-[#7C5CFC]/40 focus:border-[#7C5CFC] transition-all text-sm"
                         placeholder="••••••••"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-white focus:outline-none"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -515,10 +515,10 @@ export default function AuthPage() {
 
                     {/* LIVE PASSWORD STRENGTH HELPER (Strictly on Sign Up tab) */}
                     {mode === 'signup' && (
-                      <div className="mt-2.5 p-3 rounded-[8px] bg-gray-50/90 border border-gray-200/80">
+                      <div className="mt-2.5 p-3 rounded-lg bg-[#121217] border border-[#2A2A36]">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-gray-700">Password requirements</span>
-                          <span className={`text-[11px] font-medium transition-colors ${allRulesMet ? 'text-emerald-600 font-semibold' : 'text-gray-400'}`}>
+                          <span className="text-xs font-semibold text-slate-200">Password requirements</span>
+                          <span className={`text-[11px] font-medium transition-colors ${allRulesMet ? 'text-emerald-400 font-semibold' : 'text-[#9CA3AF]'}`}>
                             {passwordRules.filter((r) => r.met).length} of 5 met
                           </span>
                         </div>
@@ -527,13 +527,13 @@ export default function AuthPage() {
                             <li
                               key={rule.id}
                               className={`flex items-center gap-2 text-xs transition-colors duration-150 ${
-                                rule.met ? 'text-emerald-700 font-medium' : 'text-gray-500'
+                                rule.met ? 'text-emerald-400 font-medium' : 'text-[#9CA3AF]'
                               }`}
                             >
                               {rule.met ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" strokeWidth={2.5} />
+                                <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" strokeWidth={2.5} />
                               ) : (
-                                <span className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0 mx-1" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#2A2A36] shrink-0 mx-1" />
                               )}
                               <span>{rule.label}</span>
                             </li>
@@ -547,17 +547,17 @@ export default function AuthPage() {
                 {/* Optional Business Name Field for Signup */}
                 {mode === 'signup' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Business Name <span className="text-gray-400 font-normal">(optional)</span>
+                    <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                      Business Name <span className="text-[#9CA3AF] font-normal">(optional)</span>
                     </label>
                     <div className="relative">
-                      <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
                       <input
                         type="text"
                         value={businessNameInput}
                         onChange={(e) => setBusinessNameInput(e.target.value)}
                         maxLength={60}
-                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/30 focus:border-[#6C5CE7] transition-all text-sm"
+                        className="w-full pl-10 pr-4 py-2.5 bg-[#121217] border border-[#2A2A36] rounded-lg text-white placeholder-[#9CA3AF]/60 focus:outline-none focus:ring-2 focus:ring-[#7C5CFC]/40 focus:border-[#7C5CFC] transition-all text-sm"
                         placeholder="Acme Studio"
                       />
                     </div>
@@ -566,7 +566,7 @@ export default function AuthPage() {
 
                 {/* Error Banner */}
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-[8px] p-3 text-xs sm:text-sm text-red-600 leading-relaxed">
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-xs sm:text-sm text-red-400 leading-relaxed">
                     {error}
                   </div>
                 )}
@@ -576,7 +576,7 @@ export default function AuthPage() {
                   type="submit"
                   id="auth-submit-btn"
                   disabled={loading || (mode === 'signup' && !allRulesMet)}
-                  className="w-full py-2.5 bg-[#6C5CE7] text-white font-semibold rounded-[8px] hover:bg-[#5b4cdb] transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm mt-3"
+                  className="w-full py-2.5 bg-[#7C5CFC] text-white font-semibold rounded-lg hover:bg-[#6C4AEB] transition-all shadow-md shadow-[#7C5CFC]/20 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm mt-3"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {mode === 'login' && 'Sign In'}
@@ -592,18 +592,18 @@ export default function AuthPage() {
 
                 {/* Micro-text beneath primary submit button on Sign Up */}
                 {mode === 'signup' && (
-                  <p className="text-xs text-gray-500 text-center mt-3 leading-relaxed">
+                  <p className="text-xs text-[#9CA3AF] text-center mt-3 leading-relaxed">
                     By signing up, you agree to our{' '}
                     <Link
                       to="/terms"
-                      className="text-[#6C5CE7] font-medium underline hover:text-[#5b4cdb] transition-colors"
+                      className="text-[#7C5CFC] font-medium underline hover:text-[#9D8CFF] transition-colors"
                     >
                       Terms of Use
                     </Link>{' '}
                     and{' '}
                     <Link
                       to="/privacy"
-                      className="text-[#6C5CE7] font-medium underline hover:text-[#5b4cdb] transition-colors"
+                      className="text-[#7C5CFC] font-medium underline hover:text-[#9D8CFF] transition-colors"
                     >
                       Privacy Policy
                     </Link>
@@ -613,14 +613,14 @@ export default function AuthPage() {
 
               {/* Secondary Magic Link option on Sign In mode */}
               {mode === 'login' && (
-                <div className="mt-6 pt-5 border-t border-gray-200 text-center">
+                <div className="mt-6 pt-5 border-t border-[#2A2A36] text-center">
                   <button
                     type="button"
                     id="auth-magic-link-btn"
                     onClick={() => switchMode('magic_link')}
-                    className="w-full py-2.5 px-4 bg-transparent hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-[8px] border border-gray-300 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-4 bg-[#121217] hover:bg-[#21212B] text-slate-200 text-xs font-semibold rounded-lg border border-[#2A2A36] transition-all flex items-center justify-center gap-2"
                   >
-                    <Wand2 className="w-3.5 h-3.5 text-[#6C5CE7]" />
+                    <Wand2 className="w-3.5 h-3.5 text-[#7C5CFC]" />
                     Sign in with Magic Link
                   </button>
                 </div>
@@ -628,12 +628,12 @@ export default function AuthPage() {
 
               {/* Password option on Magic Link mode */}
               {mode === 'magic_link' && (
-                <div className="mt-6 pt-5 border-t border-gray-200 text-center">
+                <div className="mt-6 pt-5 border-t border-[#2A2A36] text-center">
                   <button
                     type="button"
                     id="auth-password-instead-btn"
                     onClick={() => switchMode('login')}
-                    className="text-xs font-semibold text-gray-500 hover:text-[#6C5CE7] transition-colors"
+                    className="text-xs font-semibold text-[#9CA3AF] hover:text-[#7C5CFC] transition-colors"
                   >
                     Sign in with Password instead
                   </button>
@@ -642,7 +642,7 @@ export default function AuthPage() {
 
               {/* Footer text */}
               {mode === 'signup' && (
-                <p className="text-xs text-gray-500 mt-4 text-center">
+                <p className="text-xs text-[#9CA3AF] mt-4 text-center">
                   After signing up, check your inbox to verify your email address.
                 </p>
               )}

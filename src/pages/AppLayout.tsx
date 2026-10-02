@@ -44,7 +44,7 @@ function SidebarContent({
       {/* Logo + workspace switcher (CSS Selector 2 target) */}
       <div
         id="sidebar-header"
-        className={`flex items-center h-16 border-b border-gray-200/80 dark:border-slate-800/80 transition-all duration-300 ease-in-out ${
+        className={`flex items-center h-16 border-b border-gray-200/80 dark:border-[#2A2A36] transition-all duration-300 ease-in-out ${
           isCollapsed ? 'justify-center px-2' : 'gap-2.5 px-3.5'
         }`}
       >
@@ -75,8 +75,8 @@ function SidebarContent({
               : 'Collapse sidebar to enlarge main page'
           }
           aria-expanded={!isCollapsed}
-          className={`group relative w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-violet-700 flex items-center justify-center shadow-md shadow-violet-600/25 hover:shadow-violet-600/40 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shrink-0 select-none focus:outline-none focus:ring-2 focus:ring-violet-500/50 ${
-            isCollapsed ? 'ring-2 ring-violet-500/40' : ''
+          className={`group relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C5CFC] to-indigo-600 flex items-center justify-center shadow-md shadow-[#7C5CFC]/20 hover:shadow-[#7C5CFC]/30 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shrink-0 select-none focus:outline-none focus:ring-2 focus:ring-[#7C5CFC]/50 ${
+            isCollapsed ? 'ring-2 ring-[#7C5CFC]/40' : ''
           }`}
         >
           <LayoutDashboard
@@ -113,9 +113,9 @@ function SidebarContent({
                   : 'gap-3 px-3.5 py-2.5'
               } ${
                 isActive
-                  ? 'bg-violet-600/15 text-violet-600 dark:text-violet-400 font-semibold shadow-sm ' +
-                    (isCollapsed ? 'ring-1 ring-violet-500/40' : 'border-l-2 border-violet-500')
-                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100 hover:bg-gray-100/80 dark:hover:bg-slate-800/60'
+                  ? 'bg-[#7C5CFC]/15 text-[#7C5CFC] dark:text-[#A29BFE] dark:bg-[#222030] font-semibold shadow-sm ' +
+                    (isCollapsed ? 'ring-1 ring-[#7C5CFC]/40' : 'border-l-2 border-[#7C5CFC]')
+                  : 'text-gray-500 dark:text-[#9CA3AF] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-[#1E1E26]'
               }`
             }
           >
@@ -129,7 +129,7 @@ function SidebarContent({
 
       {/* Footer */}
       <div
-        className={`border-t border-gray-200/80 dark:border-slate-800/80 transition-all duration-200 overflow-x-hidden ${
+        className={`border-t border-gray-200/80 dark:border-[#2A2A36] transition-all duration-200 overflow-x-hidden ${
           isCollapsed ? 'px-2 py-3' : 'px-3 py-4'
         }`}
       >
@@ -137,7 +137,7 @@ function SidebarContent({
           <div className="flex flex-col items-center gap-3">
             {/* User avatar with native tooltip */}
             <div
-              className="relative group w-9 h-9 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-sm font-bold text-white shadow-sm cursor-pointer"
+              className="relative group w-9 h-9 rounded-xl bg-gradient-to-br from-[#2A2A36] to-[#1E1E26] border border-[#2A2A36] flex items-center justify-center text-sm font-bold text-white shadow-sm cursor-pointer"
               title={`${userName} (${user?.email ?? ''})`}
             >
               {userInitial}
@@ -151,21 +151,21 @@ function SidebarContent({
                 onClick={onOpenHelp}
                 title="Need help or found a bug?"
                 aria-label="Need help or found a bug?"
-                className="relative group p-2 rounded-lg text-gray-400 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                className="relative group p-2 rounded-lg text-gray-400 dark:text-[#9CA3AF] hover:text-[#7C5CFC] dark:hover:text-[#A29BFE] hover:bg-violet-50 dark:hover:bg-[#1E1E26] transition-all cursor-pointer"
               >
                 <HelpCircle className="w-4 h-4" />
               </button>
               <NavLink
                 to="/terms"
                 title="Terms of Use"
-                className="relative group p-2 rounded-lg text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all"
+                className="relative group p-2 rounded-lg text-gray-400 dark:text-[#9CA3AF] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#1E1E26] transition-all"
               >
                 <FileText className="w-4 h-4" />
               </NavLink>
               <NavLink
                 to="/privacy"
                 title="Privacy Policy"
-                className="relative group p-2 rounded-lg text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all"
+                className="relative group p-2 rounded-lg text-gray-400 dark:text-[#9CA3AF] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#1E1E26] transition-all"
               >
                 <ShieldCheck className="w-4 h-4" />
               </NavLink>
@@ -173,7 +173,7 @@ function SidebarContent({
                 onClick={onSignOut}
                 title="Sign Out"
                 aria-label="Sign Out"
-                className="relative group p-2 rounded-lg text-gray-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                className="relative group p-2 rounded-lg text-gray-500 dark:text-[#9CA3AF] hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -182,18 +182,18 @@ function SidebarContent({
         ) : (
           <>
             <div className="flex items-center gap-3 px-3 py-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-sm font-medium text-white shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2A2A36] to-[#1E1E26] border border-[#2A2A36] flex items-center justify-center text-sm font-medium text-white shrink-0">
                 {userInitial}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{userName}</p>
-                <p className="text-xs text-gray-400 dark:text-slate-400 truncate">{user?.email}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{userName}</p>
+                <p className="text-xs text-gray-400 dark:text-[#9CA3AF] truncate">{user?.email}</p>
               </div>
             </div>
             <div className="flex items-center justify-between px-3">
               <button
                 onClick={onSignOut}
-                className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-gray-500 dark:text-[#9CA3AF] hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Sign Out
@@ -204,21 +204,21 @@ function SidebarContent({
                   onClick={onOpenHelp}
                   title="Need help or found a bug?"
                   aria-label="Need help or found a bug?"
-                  className="p-2 rounded-lg text-gray-400 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                  className="p-2 rounded-lg text-gray-400 dark:text-[#9CA3AF] hover:text-[#7C5CFC] dark:hover:text-[#A29BFE] hover:bg-violet-50 dark:hover:bg-[#1E1E26] transition-all cursor-pointer"
                 >
                   <HelpCircle className="w-4 h-4" />
                 </button>
                 <NavLink
                   to="/terms"
                   title="Terms of Use"
-                  className="p-2 rounded-lg text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all"
+                  className="p-2 rounded-lg text-gray-400 dark:text-[#9CA3AF] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#1E1E26] transition-all"
                 >
                   <FileText className="w-4 h-4" />
                 </NavLink>
                 <NavLink
                   to="/privacy"
                   title="Privacy Policy"
-                  className="p-2 rounded-lg text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all"
+                  className="p-2 rounded-lg text-gray-400 dark:text-[#9CA3AF] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#1E1E26] transition-all"
                 >
                   <ShieldCheck className="w-4 h-4" />
                 </NavLink>
@@ -285,11 +285,11 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF] dark:bg-[#0B0F19] flex transition-colors duration-200">
+    <div className="min-h-screen bg-[#F8F7FF] dark:bg-[#0F0F12] flex transition-colors duration-200">
       {/* Desktop & tablet sidebar (CSS Selector 1 & 2 parent) */}
       <aside
         id="app-sidebar"
-        className={`hidden md:flex flex-col bg-white/95 dark:bg-[#111625] backdrop-blur-xl border-r border-purple-100/60 dark:border-slate-800 shrink-0 transition-[width] duration-300 ease-in-out select-none overflow-hidden ${
+        className={`hidden md:flex flex-col bg-white/95 dark:bg-[#18181F] backdrop-blur-xl border-r border-purple-100/60 dark:border-[#2A2A36] shrink-0 transition-[width] duration-300 ease-in-out select-none overflow-hidden ${
           isCollapsed ? 'w-[72px]' : 'w-64'
         }`}
       >
@@ -303,17 +303,17 @@ export default function AppLayout() {
       </aside>
 
       {/* Mobile top navigation header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white/95 dark:bg-[#111625]/90 backdrop-blur-xl border-b border-purple-100/60 dark:border-slate-800 flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white/95 dark:bg-[#18181F]/90 backdrop-blur-xl border-b border-purple-100/60 dark:border-[#2A2A36] flex items-center justify-between px-4">
         <button
           onClick={() => setMobileOpen(true)}
           className="flex items-center gap-2.5 group cursor-pointer focus:outline-none"
           aria-label="Open menu and navigation"
           title="Open menu"
         >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-500 flex items-center justify-center shadow-sm group-hover:scale-105 active:scale-95 transition-transform">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C5CFC] to-indigo-500 flex items-center justify-center shadow-sm group-hover:scale-105 active:scale-95 transition-transform">
             <LayoutDashboard className="w-4 h-4 text-white" />
           </div>
-          <span className="text-base font-bold text-gray-900 dark:text-slate-100 truncate max-w-[180px]">
+          <span className="text-base font-bold text-gray-900 dark:text-white truncate max-w-[180px]">
             {businessName}
           </span>
         </button>
@@ -322,7 +322,7 @@ export default function AppLayout() {
           <button
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
-            className="p-1.5 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-gray-500 dark:text-[#9CA3AF] hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-[#1E1E26] transition-colors"
           >
             <Menu className="w-6 h-6" />
           </button>
@@ -336,7 +336,7 @@ export default function AppLayout() {
             className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative w-72 max-w-[85vw] bg-white dark:bg-[#151C2C] border-r border-gray-200 dark:border-slate-800 flex flex-col shadow-2xl">
+          <aside className="relative w-72 max-w-[85vw] bg-white dark:bg-[#18181F] border-r border-gray-200 dark:border-[#2A2A36] flex flex-col shadow-2xl">
             <SidebarContent
               isMobile
               onNavigate={() => setMobileOpen(false)}

@@ -14,14 +14,39 @@ export type Contact = {
   created_at: string | null;
 };
 
+export type ColumnType = 'open' | 'won' | 'lost';
+
+export type Board = {
+  id: string;
+  user_id: string;
+  name: string;
+  template: string | null;
+  position: number;
+  created_at: string;
+};
+
+export type BoardColumn = {
+  id: string;
+  board_id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  color: string | null;
+  position: number;
+  column_type: ColumnType;
+  created_at: string;
+};
+
 export type Deal = {
   id: string;
   user_id: string;
-  workspace_id: string;
+  workspace_id?: string;
   title: string;
   contact_id: string | null;
   value: number | null;
   stage: string;
+  board_id?: string | null;
+  column_id?: string | null;
   created_at: string | null;
 };
 
@@ -81,6 +106,7 @@ export type WorkflowCard = {
   user_id: string;
   workspace_id: string;
   column_id: string;
+  board_id?: string | null;
   title: string;
   client_name: string | null;
   contact_id: string | null;

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase, type Contact, type Note, type WorkflowCard, type WorkflowColumn, type Invoice } from '../lib/supabase';
+import { supabase, type Contact, type Note, type WorkflowCard, type WorkflowColumn, type Invoice, type Board } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { useWorkspace, useActiveWorkspaceId } from '../lib/workspace';
 import { useUserPreferences } from '../lib/userPreferences';
@@ -10,6 +10,12 @@ import { PageHeader, Card, EmptyState, Button } from '../components/ui';
 import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import { FollowUpTasksWidget } from '../components/dashboard/FollowUpTasksWidget';
 import { formatCurrency } from '../lib/currency';
+import {
+  getBoards,
+  getBoardColumns,
+  subscribeToWorkflowUpdates,
+  broadcastWorkflowUpdate,
+} from '../services/boardService';
 import {
   Users, KanbanSquare, Clock, ArrowRight, UserPlus, AlertTriangle, ShieldAlert,
   Send, CheckCircle2, ChevronRight, Filter, X, Receipt, MessageSquare
@@ -128,6 +134,55 @@ const CustomTooltip = ({
   return null;
 };
 
+function isCardDeleted(card: unknown): boolean {
+  if (!card || typeof card !== 'object') return false;
+  const c = card as Record<string, unknown>;
+  if (c.is_deleted === true || c.is_deleted === 'true') return true;
+  if (c.deleted_at !== null && c.deleted_at !== undefined) return true;
+  if (c.archived === true || c.is_archived === true) return true;
+  if (c.status === 'deleted' || c.status === 'archived') return true;
+  return false;
+}
+
+function isCompletedStage(
+  col?: { name?: string; column_type?: string } | null,
+  card?: unknown
+): boolean {
+  if (col) {
+    if (col.column_type === 'won' || col.column_type === 'lost') return true;
+    const name = (col.name || '').trim().toLowerCase();
+    if (
+      name.includes('won') ||
+      name.includes('lost') ||
+      name.includes('closed') ||
+      name.includes('paid') ||
+      name.includes('completed') ||
+      name.includes('resolved') ||
+      name.includes('delivered') ||
+      name.includes('done') ||
+      name.includes('settled') ||
+      name.includes('finished')
+    ) {
+      return true;
+    }
+  }
+  if (card && typeof card === 'object') {
+    const c = card as Record<string, unknown>;
+    const stage = String(c.stage || c.status_note || '').trim().toLowerCase();
+    if (
+      stage.includes('won') ||
+      stage.includes('closed') ||
+      stage.includes('paid & closed') ||
+      stage.includes('completed') ||
+      stage.includes('resolved') ||
+      stage.includes('settled')
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -137,55 +192,143 @@ export default function Dashboard() {
   const { addToast } = useToast();
   const { logs, logActivity } = useActivityLog();
 
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [cards, setCards] = useState<WorkflowCard[]>([]);
-  const [columns, setColumns] = useState<WorkflowColumn[]>([]);
+  const [columns, setColumns] = useState<Array<WorkflowColumn & { column_type?: string }>>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      if (!workspaceId) { setLoading(false); return; }
-      setLoading(true);
+  const loadDashboardData = useCallback(
+    async (isSilent = false, overrideBoardId?: string) => {
+      if (!workspaceId) {
+        setLoading(false);
+        return;
+      }
+      if (!isSilent) setLoading(true);
+
       try {
-        const [c, n, cols, crds, inv] = await Promise.all([
+        // 1. Fetch available boards and determine active workflow board
+        const fetchedBoards = await getBoards();
+        setBoards(fetchedBoards);
+
+        const savedBoardId = overrideBoardId || localStorage.getItem('workflow_last_selected_board');
+        const curBoard =
+          fetchedBoards.find((b) => b.id === savedBoardId) || fetchedBoards[0] || null;
+        setActiveBoard(curBoard);
+
+        // 2. Query data in parallel
+        const [c, n, legacyCols, crds, inv, curBoardCols] = await Promise.all([
           supabase.from('contacts').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }),
           supabase.from('notes').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }).limit(15),
           supabase.from('workflow_columns').select('*').eq('workspace_id', workspaceId).order('position', { ascending: true }),
           supabase.from('workflow_cards').select('*').eq('workspace_id', workspaceId).order('moved_at', { ascending: false }),
           supabase.from('invoices').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }),
+          curBoard ? getBoardColumns(curBoard.id) : Promise.resolve([]),
         ]);
 
         if (c.error) throw new Error(c.error.message);
         if (n.error) throw new Error(n.error.message);
-        if (cols.error) throw new Error(cols.error.message);
         if (crds.error) throw new Error(crds.error.message);
         if (inv.error) throw new Error(inv.error.message);
 
+        const allCards = ((crds.data ?? []) as WorkflowCard[]).filter(
+          (card) => !isCardDeleted(card)
+        );
+        const legacyColumns = (legacyCols.data ?? []) as WorkflowColumn[];
+
+        // Columns strictly from current active board (with fallback to legacy)
+        let resolvedColumns: Array<WorkflowColumn & { column_type?: string }> = [];
+        if (curBoardCols && curBoardCols.length > 0) {
+          resolvedColumns = curBoardCols.map((bc) => ({
+            id: bc.id,
+            user_id: bc.user_id,
+            workspace_id: workspaceId,
+            name: bc.name,
+            position: bc.position,
+            updated_at: bc.created_at,
+            column_type: bc.column_type,
+          }));
+        } else {
+          resolvedColumns = legacyColumns;
+        }
+
+        // Filter cards for the current workflow board (never include deleted or foreign cards)
+        const activeColIds = new Set(resolvedColumns.map((col) => col.id));
+        let boardCards: WorkflowCard[] = [];
+        if (curBoard && activeColIds.size > 0) {
+          boardCards = allCards.filter(
+            (card) =>
+              !isCardDeleted(card) &&
+              (card.board_id === curBoard.id || activeColIds.has(card.column_id))
+          );
+        } else {
+          boardCards = allCards.filter((card) => !isCardDeleted(card));
+        }
+
         setContacts((c.data ?? []) as Contact[]);
         setNotes((n.data ?? []) as Note[]);
-        setColumns((cols.data ?? []) as WorkflowColumn[]);
-        setCards((crds.data ?? []) as WorkflowCard[]);
+        setColumns(resolvedColumns);
+        setCards(boardCards);
         setInvoices((inv.data ?? []) as Invoice[]);
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
-        const message = err instanceof Error ? err.message : String(err);
-        const isFetchError = message.toLowerCase().includes('failed to fetch') || message.toLowerCase().includes('load');
-        const friendlyMsg = isFetchError
-          ? 'Network error. Please check your connection or reload the page.'
-          : message || 'Could not load dashboard data.';
-        addToast('error', 'Error Loading Dashboard', friendlyMsg);
+        if (!isSilent) {
+          const message = err instanceof Error ? err.message : String(err);
+          const isFetchError = message.toLowerCase().includes('failed to fetch') || message.toLowerCase().includes('load');
+          const friendlyMsg = isFetchError
+            ? 'Network error. Please check your connection or reload the page.'
+            : message || 'Could not load dashboard data.';
+          addToast('error', 'Error Loading Dashboard', friendlyMsg);
+        }
       } finally {
-        setLoading(false);
+        if (!isSilent) setLoading(false);
       }
-    }
-    load();
-  }, [workspaceId, addToast]);
+    },
+    [workspaceId, addToast]
+  );
 
-  const resolvedCol = columns.find((c) => c.name === 'Resolved / Completed');
-  const openCards = cards.filter((card) => !resolvedCol || card.column_id !== resolvedCol.id);
+  useEffect(() => {
+    loadDashboardData(false);
+
+    // Live subscription: updates whenever workflow board or cards change
+    const unsubscribe = subscribeToWorkflowUpdates((payload) => {
+      loadDashboardData(true, payload?.boardId);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [loadDashboardData]);
+
+  const handleSelectBoardFromDashboard = async (board: Board) => {
+    setActiveBoard(board);
+    localStorage.setItem('workflow_last_selected_board', board.id);
+    broadcastWorkflowUpdate(board.id);
+    await loadDashboardData(true, board.id);
+  };
+
+  const completedColumnIds = new Set(
+    columns
+      .filter((c) => isCompletedStage(c))
+      .map((c) => c.id)
+  );
+
+  const activeColumnMap = new Map(columns.map((c) => [c.id, c]));
+
+  // Open cards: active cards belonging to an open, non-completed column
+  const openCards = cards.filter((card) => {
+    if (isCardDeleted(card)) return false;
+    const col = activeColumnMap.get(card.column_id);
+    if (!col) return false;
+    if (completedColumnIds.has(card.column_id) || isCompletedStage(col, card)) {
+      return false;
+    }
+    return true;
+  });
 
   // SLA Computations (7 Days Threshold)
   const now = Date.now();
@@ -204,7 +347,15 @@ export default function Dashboard() {
 
   // 2. Stalled Workflow Cards > 7 Days in current stage
   const stalledCards = openCards.filter((card) => {
-    const movedMs = card.moved_at ? new Date(card.moved_at).getTime() : (card.created_at ? new Date(card.created_at).getTime() : now);
+    if (isCardDeleted(card)) return false;
+    const col = activeColumnMap.get(card.column_id);
+    if (!col || isCompletedStage(col, card)) return false;
+
+    const movedMs = card.moved_at
+      ? new Date(card.moved_at).getTime()
+      : card.created_at
+      ? new Date(card.created_at).getTime()
+      : now;
     return (now - movedMs) > SEVEN_DAYS_MS;
   });
 
@@ -228,19 +379,21 @@ export default function Dashboard() {
         link: n.contact_id ? `/contacts/${n.contact_id}` : undefined,
       };
     }),
-    ...cards.map((card) => {
-      const contactMatch = contacts.find((c) => c.id === card.contact_id);
-      return {
-        id: `card-${card.id}`,
-        type: 'card' as const,
-        label: 'Workflow update',
-        detail: card.title,
-        created_at: card.moved_at || card.created_at,
-        contactId: card.contact_id,
-        contactName: contactMatch?.name,
-        link: '/workflow',
-      };
-    }),
+    ...cards
+      .filter((card) => !isCardDeleted(card))
+      .map((card) => {
+        const contactMatch = contacts.find((c) => c.id === card.contact_id);
+        return {
+          id: `card-${card.id}`,
+          type: 'card' as const,
+          label: 'Workflow update',
+          detail: card.title,
+          created_at: card.moved_at || card.created_at,
+          contactId: card.contact_id,
+          contactName: contactMatch?.name,
+          link: '/workflow',
+        };
+      }),
     ...invoices.map((inv) => {
       const contactMatch = contacts.find((c) => c.name.toLowerCase().trim() === (inv.customer_name || '').toLowerCase().trim());
       return {
@@ -294,9 +447,10 @@ export default function Dashboard() {
     })
     .slice(0, 6);
 
+  const validBoardCards = cards.filter((c) => !isCardDeleted(c));
   const funnelData = columns.map((col) => {
-    const colCards = cards.filter((c) => c.column_id === col.id);
-    const pct = cards.length > 0 ? (colCards.length / cards.length) * 100 : 0;
+    const colCards = validBoardCards.filter((c) => c.column_id === col.id);
+    const pct = validBoardCards.length > 0 ? (colCards.length / validBoardCards.length) * 100 : 0;
     return {
       id: col.id,
       name: col.name,
@@ -610,13 +764,34 @@ export default function Dashboard() {
             )}
           </div>
           <Card className="p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div>
-                <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                  <KanbanSquare className="w-5 h-5 text-violet-600" /> Pipeline Conversion Funnel
-                </h2>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <KanbanSquare className="w-5 h-5 text-violet-600" /> Pipeline Conversion Funnel
+                  </h2>
+                  {boards.length > 0 && (
+                    <div className="relative inline-block ml-1">
+                      <select
+                        value={activeBoard?.id || ''}
+                        onChange={(e) => {
+                          const found = boards.find((b) => b.id === e.target.value);
+                          if (found) handleSelectBoardFromDashboard(found);
+                        }}
+                        className="text-xs font-semibold py-1 px-2.5 pr-7 bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 rounded-lg cursor-pointer focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        title="Switch active workflow pipeline"
+                      >
+                        {boards.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Click any stage bar to filter Customer 360 activity feed
+                  Live view of {activeBoard?.name || 'current workflow board'} · Click any stage bar to filter activity feed
                 </p>
               </div>
               <Link to="/workflow" className="text-xs text-violet-600 dark:text-violet-400 font-semibold hover:underline shrink-0">

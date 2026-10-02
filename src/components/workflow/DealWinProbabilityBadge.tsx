@@ -7,12 +7,13 @@ import { Modal, Button } from '../ui';
 type Props = {
   card: WorkflowCard;
   column?: WorkflowColumn | null;
+  allColumns?: Array<{ id: string; position: number; column_type?: string; name?: string }>;
   size?: 'sm' | 'md' | 'lg';
   showDetailsOnClick?: boolean;
 };
 
-export function DealWinProbabilityBadge({ card, column, size = 'sm', showDetailsOnClick = true }: Props) {
-  const result: WinProbabilityResult = calculateDealWinProbability(card, column);
+export function DealWinProbabilityBadge({ card, column, allColumns, size = 'sm', showDetailsOnClick = true }: Props) {
+  const result: WinProbabilityResult = calculateDealWinProbability(card, column, allColumns);
   const [modalOpen, setModalOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState<string[] | null>(null);

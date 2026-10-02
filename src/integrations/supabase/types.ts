@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      boards: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          template: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          template?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          template?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      board_columns: {
+        Row: {
+          board_id: string
+          color: string | null
+          column_type: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          board_id: string
+          color?: string | null
+          column_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          position?: number
+          user_id?: string
+        }
+        Update: {
+          board_id?: string
+          color?: string | null
+          column_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           created_at: string
@@ -105,6 +168,8 @@ export type Database = {
       }
       deals: {
         Row: {
+          board_id: string | null
+          column_id: string | null
           contact_id: string | null
           created_at: string | null
           id: string
@@ -115,6 +180,8 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          board_id?: string | null
+          column_id?: string | null
           contact_id?: string | null
           created_at?: string | null
           id?: string
@@ -125,6 +192,8 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          board_id?: string | null
+          column_id?: string | null
           contact_id?: string | null
           created_at?: string | null
           id?: string
@@ -285,6 +354,7 @@ export type Database = {
       workflow_cards: {
         Row: {
           assignee_name: string | null
+          board_id: string | null
           client_name: string | null
           column_id: string
           contact_id: string | null
@@ -302,6 +372,7 @@ export type Database = {
         }
         Insert: {
           assignee_name?: string | null
+          board_id?: string | null
           client_name?: string | null
           column_id: string
           contact_id?: string | null
@@ -319,6 +390,7 @@ export type Database = {
         }
         Update: {
           assignee_name?: string | null
+          board_id?: string | null
           client_name?: string | null
           column_id?: string
           contact_id?: string | null

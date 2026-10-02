@@ -52,37 +52,37 @@ export default function UpdatePasswordPage() {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="min-h-screen bg-[#F8F7FF] dark:bg-[#0F0E17] flex items-center justify-center p-4 relative transition-colors duration-200"
+      className="min-h-screen bg-[#F8F7FF] dark:bg-[#0F0F12] flex items-center justify-center p-4 relative transition-colors duration-200"
     >
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-600/20">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#7C5CFC] to-indigo-600 flex items-center justify-center shadow-lg shadow-[#7C5CFC]/20">
             <LayoutDashboard className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">{businessName}</h1>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Password Reset</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{businessName}</h1>
+            <p className="text-sm text-gray-500 dark:text-[#9CA3AF]">Password Reset</p>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-[#151C2C] border border-gray-200 dark:border-slate-800 rounded-2xl p-8 shadow-xl">
+        <div className="bg-white dark:bg-[#18181F] border border-gray-200 dark:border-[#2A2A36] rounded-2xl p-8 shadow-xl">
           {success ? (
             <div className="text-center">
               <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-5">
                 <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-2">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                 Password Updated!
               </h2>
-              <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
+              <p className="text-sm text-gray-500 dark:text-[#9CA3AF] mb-6">
                 Your password has been changed successfully. You can now access your account.
               </p>
               <button
                 onClick={() => navigate('/dashboard')}
-                className="w-full py-3 bg-[#6D5FFA] text-white font-semibold rounded-xl hover:bg-[#5B4EEA] transition-all shadow-lg shadow-[#6D5FFA]/25"
+                className="w-full py-3 bg-[#7C5CFC] text-white font-semibold rounded-xl hover:bg-[#6C4AEB] transition-all shadow-lg shadow-[#7C5CFC]/25"
               >
                 Go to Dashboard
               </button>
@@ -90,31 +90,31 @@ export default function UpdatePasswordPage() {
           ) : (
             <>
               <div className="mb-6 text-center">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Set new password</h2>
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Set new password</h2>
+                <p className="text-sm text-gray-500 dark:text-[#9CA3AF] mt-1">
                   Please enter your new password below.
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">New Password</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1.5">New Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-[#9CA3AF]" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
                       minLength={6}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#6D5FFA]/50 focus:border-[#6D5FFA] transition-all text-sm"
+                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-[#121217] border border-gray-200 dark:border-[#2A2A36] rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#9CA3AF]/60 focus:outline-none focus:ring-2 focus:ring-[#7C5CFC]/40 focus:border-[#7C5CFC] transition-all text-sm"
                       placeholder="At least 6 characters"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 focus:outline-none"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-[#9CA3AF] hover:text-gray-600 dark:hover:text-white focus:outline-none"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -122,16 +122,16 @@ export default function UpdatePasswordPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Confirm New Password</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1.5">Confirm New Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-[#9CA3AF]" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
                       minLength={6}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#6D5FFA]/50 focus:border-[#6D5FFA] transition-all text-sm"
+                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-[#121217] border border-gray-200 dark:border-[#2A2A36] rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#9CA3AF]/60 focus:outline-none focus:ring-2 focus:ring-[#7C5CFC]/40 focus:border-[#7C5CFC] transition-all text-sm"
                       placeholder="Repeat your new password"
                     />
                   </div>
@@ -146,7 +146,7 @@ export default function UpdatePasswordPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-[#6D5FFA] text-white font-semibold rounded-xl hover:bg-[#5B4EEA] transition-all shadow-lg shadow-[#6D5FFA]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+                  className="w-full py-3 bg-[#7C5CFC] text-white font-semibold rounded-xl hover:bg-[#6C4AEB] transition-all shadow-lg shadow-[#7C5CFC]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   Update Password

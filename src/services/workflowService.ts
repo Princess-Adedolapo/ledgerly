@@ -2,6 +2,7 @@ import { supabase, type WorkflowColumn, type WorkflowCard, type Contact, type In
 import { getActiveWorkspaceId, tryGetActiveWorkspaceId } from '../lib/activeWorkspace';
 import { logCardActivity } from './activityService';
 import { ContactSchema, NoteSchema, WorkflowCardSchema, sanitizeText } from '../lib/validation';
+import { broadcastWorkflowUpdate } from './boardService';
 
 const normalize = (s: string) => s.toLowerCase().replace(/[\s/]+/g, '');
 
@@ -176,6 +177,7 @@ export type WorkflowCardInput = {
   assignee_name?: string | null;
   priority: 'low' | 'medium' | 'high';
   column_id: string;
+  board_id?: string | null;
   moved_at?: string;
 };
 
@@ -206,6 +208,7 @@ export async function createWorkflowCard(input: WorkflowCardInput): Promise<void
     user_id: uid,
     workspace_id: wsId,
     column_id: validated.column_id,
+    board_id: input.board_id || null,
     title: validated.title,
     contact_id: validated.contact_id,
     status_note: validated.status_note || null,
@@ -218,6 +221,22 @@ export async function createWorkflowCard(input: WorkflowCardInput): Promise<void
 
   if (error) throw error;
 
+  // Also sync to deals table for pipeline reporting
+  try {
+    await supabase.from('deals').insert({
+      user_id: uid,
+      workspace_id: wsId,
+      title: validated.title,
+      contact_id: validated.contact_id || null,
+      column_id: validated.column_id,
+      board_id: input.board_id || null,
+      stage: validated.title,
+      value: 0,
+    });
+  } catch {
+    // If deals table has specific constraints or not yet migrated, ignore
+  }
+
   if (inserted) {
     await logCardActivity({
       card_id: inserted.id,
@@ -226,6 +245,7 @@ export async function createWorkflowCard(input: WorkflowCardInput): Promise<void
       content: 'Card created in workflow',
     });
   }
+  broadcastWorkflowUpdate(input.board_id || undefined);
 }
 
 
@@ -309,11 +329,13 @@ export async function updateWorkflowCard(cardId: string, updates: WorkflowCardUp
       });
     }
   }
+  broadcastWorkflowUpdate();
 }
 
 export async function deleteWorkflowCard(cardId: string): Promise<void> {
   const { error } = await supabase.from('workflow_cards').delete().eq('id', cardId);
   if (error) throw error;
+  broadcastWorkflowUpdate();
 }
 
 export async function updateColumnName(columnId: string, name: string): Promise<void> {
@@ -337,7 +359,14 @@ export async function autoResolveWorkflowCardForCustomer(customerNameOrId: strin
 
   try {
     const cols = await ensureWorkflowColumns();
-    const resolvedCol = cols.find((c) => normalize(c.name) === 'resolvedcompleted' || normalize(c.name).includes('resolved'));
+    const resolvedCol = cols.find(
+      (c) =>
+        (c as WorkflowColumn & { column_type?: string }).column_type === 'won' ||
+        normalize(c.name) === 'resolvedcompleted' ||
+        normalize(c.name).includes('resolved') ||
+        normalize(c.name).includes('paid') ||
+        normalize(c.name).includes('won')
+    );
     if (!resolvedCol) return false;
 
     let targetContactId = customerNameOrId;

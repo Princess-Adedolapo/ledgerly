@@ -1,22 +1,58 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useDebounce } from '../hooks/useDebounce';
-import { supabase, type WorkflowCard, type WorkflowColumn, type Contact, type Invoice, CARD_PRIORITIES, CONTACT_STATUSES } from '../lib/supabase';
 import {
-  ensureWorkflowColumns,
-  getWorkflowCards,
+  supabase,
+  type WorkflowCard,
+  type Board,
+  type BoardColumn,
+  type Contact,
+  type Invoice,
+  CARD_PRIORITIES,
+  CONTACT_STATUSES,
+} from '../lib/supabase';
+import {
+  getBoards,
+  createBoard,
+  renameBoard,
+  deleteBoard,
+  getBoardColumns,
+  saveBoardColumns,
+  deleteBoardColumn,
+  getCardsForBoard,
+  MAX_BOARDS_PER_USER,
+  type BoardTemplateKey,
+  subscribeToWorkflowUpdates,
+  broadcastWorkflowUpdate,
+} from '../services/boardService';
+import {
   getContacts,
   createWorkflowCard,
   updateWorkflowCard,
   deleteWorkflowCard,
   createContact,
   getInvoicesForContact,
-  subscribeToWorkflowCards,
-  subscribeToWorkflowColumns,
 } from '../services/workflowService';
 import { PageHeader, Card, Button, Input, Modal } from '../components/ui';
 import SearchableContactSelect from '../components/contacts/SearchableContactSelect';
-import { Plus, Users, Calendar, ChevronDown, Trash2, Search, Mail, Phone, Building2, FileText, Send, FilePlus, MessageSquare, ArrowRightLeft } from 'lucide-react';
+import {
+  Plus,
+  Users,
+  Calendar,
+  ChevronDown,
+  Trash2,
+  Search,
+  Mail,
+  Phone,
+  Building2,
+  FileText,
+  Send,
+  FilePlus,
+  MessageSquare,
+  ArrowRightLeft,
+  Sparkles,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useActivityLog } from '../contexts/ActivityLogContext';
 import { useNotificationPreferences } from '../contexts/NotificationContext';
@@ -28,10 +64,12 @@ import { EmailComposerModal } from '../components/email/EmailComposer';
 import { logCardActivity } from '../services/activityService';
 import { DealWinProbabilityBadge } from '../components/workflow/DealWinProbabilityBadge';
 import { MeetingSummarizerModal } from '../components/ai/MeetingSummarizerModal';
-import { Sparkles } from 'lucide-react';
 import { getErrorMessage } from '../lib/errorUtils';
-
 import { getInvoices } from '../services/invoiceService';
+import { BoardSelector } from '../components/workflow/BoardSelector';
+import { NewBoardModal } from '../components/workflow/NewBoardModal';
+import { EditBoardModal } from '../components/workflow/EditBoardModal';
+import { calculateDealWinProbability } from '../utils/dealAiInsights';
 
 const priorityStyles: Record<'low' | 'medium' | 'high', { border: string; badge: string; label: string }> = {
   high: { border: 'border-l-4 border-red-500', badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400', label: 'High' },
@@ -45,56 +83,15 @@ const invoiceStatusStyles: Record<string, string> = {
   overdue: 'bg-red-500/15 text-red-600 dark:text-red-400',
 };
 
-const getStageInfo = (colName: string) => {
-  const norm = colName.trim().toLowerCase();
-  if (norm.includes('lead') || norm.includes('inflow')) {
-    return {
-      desc: 'New leads & inquiries',
-      badge: {
-        label: 'Lead',
-        class: 'bg-amber-100/90 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60',
-      },
-      progress: 25,
-    };
-  }
-  if (norm.includes('proposal') || norm.includes('sent') || norm.includes('quote') || norm.includes('pending')) {
-    return {
-      desc: 'Quoted / Pending review',
-      badge: {
-        label: 'Pending',
-        class: 'bg-violet-100/90 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/60',
-      },
-      progress: 50,
-    };
-  }
-  if (norm.includes('progress') || norm.includes('active') || norm.includes('work')) {
-    return {
-      desc: 'Active deliverables & ongoing work',
-      badge: {
-        label: 'Active',
-        class: 'bg-emerald-100/90 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60',
-      },
-      progress: 75,
-    };
-  }
-  if (norm.includes('paid') || norm.includes('closed') || norm.includes('resolved') || norm.includes('completed')) {
-    return {
-      desc: 'Settled invoices & completed projects',
-      badge: {
-        label: 'Paid',
-        class: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-700',
-      },
-      progress: 100,
-    };
-  }
-  return {
-    desc: 'Pipeline stage',
-    badge: {
-      label: 'Active',
-      class: 'bg-violet-100/90 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/60',
-    },
-    progress: 50,
-  };
+const columnColorPills: Record<string, string> = {
+  amber: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60',
+  violet: 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/60',
+  blue: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200/80 dark:border-blue-800/60',
+  emerald: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60',
+  sky: 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 border-sky-200/80 dark:border-sky-800/60',
+  indigo: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-200/80 dark:border-indigo-800/60',
+  rose: 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/60',
+  slate: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700',
 };
 
 const getCardDealValue = (card: WorkflowCard, contact: Contact | null, allInvoices: Invoice[]): number => {
@@ -138,7 +135,10 @@ const emptyForm = (colId: string): BoardFormState => ({
 });
 
 export default function WorkflowBoard() {
-  const [columns, setColumns] = useState<WorkflowColumn[]>([]);
+  // Boards state
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [activeBoard, setActiveBoard] = useState<Board | null>(null);
+  const [columns, setColumns] = useState<BoardColumn[]>([]);
   const [cards, setCards] = useState<WorkflowCard[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [invoicesList, setInvoicesList] = useState<Invoice[]>([]);
@@ -155,6 +155,10 @@ export default function WorkflowBoard() {
   const { logActivity } = useActivityLog();
   const { preferences } = useNotificationPreferences();
   const { currencyCode, currencyDisplayMode } = useUserPreferences();
+
+  // Board management modals
+  const [newBoardModalOpen, setNewBoardModalOpen] = useState(false);
+  const [editBoardModalOpen, setEditBoardModalOpen] = useState(false);
 
   // Add-card modal
   const [addOpen, setAddOpen] = useState(false);
@@ -190,39 +194,87 @@ export default function WorkflowBoard() {
   // Move dropdown state
   const [moveMenuId, setMoveMenuId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  // Helper to get active board storage key
+  const getActiveBoardStorageKey = () => `workflow_last_selected_board`;
+
+  // Load all boards and initial data
+  const loadBoardsAndData = useCallback(async () => {
     try {
-      const [cols, crds, ctcts, invs] = await Promise.all([
-        ensureWorkflowColumns(),
-        getWorkflowCards(),
+      setLoading(true);
+      const [fetchedBoards, ctcts, invs] = await Promise.all([
+        getBoards(),
         getContacts(),
         getInvoices().catch(() => []),
       ]);
-      setColumns(cols);
-      setCards(crds);
+
+      setBoards(fetchedBoards);
       setContacts(ctcts);
       setInvoicesList(invs);
+
+      // Select active board: check remembered ID or fallback to first board
+      const savedBoardId = localStorage.getItem(getActiveBoardStorageKey());
+      const currentBoard = fetchedBoards.find((b) => b.id === savedBoardId) || fetchedBoards[0] || null;
+
+      setActiveBoard(currentBoard);
+
+      if (currentBoard) {
+        const boardCols = await getBoardColumns(currentBoard.id);
+        setColumns(boardCols);
+        const boardCards = await getCardsForBoard(
+          currentBoard.id,
+          boardCols.map((c) => c.id)
+        );
+        setCards(boardCards);
+      } else {
+        setColumns([]);
+        setCards([]);
+      }
+
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load workflow board');
+      setError(err instanceof Error ? err.message : 'Failed to load workflow boards');
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Reload board columns and cards when activeBoard changes
+  const reloadActiveBoard = useCallback(async (board: Board) => {
+    try {
+      const boardCols = await getBoardColumns(board.id);
+      setColumns(boardCols);
+      const boardCards = await getCardsForBoard(
+        board.id,
+        boardCols.map((c) => c.id)
+      );
+      setCards(boardCards);
+      localStorage.setItem(getActiveBoardStorageKey(), board.id);
+    } catch (err) {
+      console.error('Error reloading active board:', err);
+    }
+  }, []);
+
   useEffect(() => {
-    load();
-    const c1 = subscribeToWorkflowColumns(() => {
-      ensureWorkflowColumns().then(setColumns).catch(() => {});
+    loadBoardsAndData();
+
+    // Live real-time subscription for board & card changes
+    const unsubscribe = subscribeToWorkflowUpdates((payload) => {
+      getBoards()
+        .then((updatedBoards) => {
+          setBoards(updatedBoards);
+          const targetId = payload?.boardId || localStorage.getItem(getActiveBoardStorageKey());
+          const match = updatedBoards.find((b) => b.id === targetId) || updatedBoards[0];
+          if (match) {
+            reloadActiveBoard(match);
+          }
+        })
+        .catch(() => {});
     });
-    const c2 = subscribeToWorkflowCards(() => {
-      getWorkflowCards().then(setCards).catch(() => {});
-    });
+
     return () => {
-      supabase.removeChannel(c1);
-      supabase.removeChannel(c2);
+      unsubscribe();
     };
-  }, [load]);
+  }, [loadBoardsAndData, reloadActiveBoard]);
 
   useEffect(() => {
     if (!moveMenuId) return;
@@ -238,7 +290,7 @@ export default function WorkflowBoard() {
   }, [contacts]);
 
   const columnById = useMemo(() => {
-    const m = new Map<string, WorkflowColumn>();
+    const m = new Map<string, BoardColumn>();
     columns.forEach((c) => m.set(c.id, c));
     return m;
   }, [columns]);
@@ -254,8 +306,101 @@ export default function WorkflowBoard() {
     });
   }, [cards, contactById, debouncedSearch]);
 
+  // Board switcher handler
+  const handleSelectBoard = (board: Board) => {
+    setActiveBoard(board);
+    localStorage.setItem(getActiveBoardStorageKey(), board.id);
+    reloadActiveBoard(board);
+    broadcastWorkflowUpdate(board.id);
+  };
+
+  // Create new board
+  const handleCreateBoard = async (name: string, templateKey: BoardTemplateKey) => {
+    const { board: createdBoard } = await createBoard(name, templateKey);
+    setBoards((prev) => [...prev, createdBoard]);
+    setActiveBoard(createdBoard);
+    localStorage.setItem(getActiveBoardStorageKey(), createdBoard.id);
+    await reloadActiveBoard(createdBoard);
+    broadcastWorkflowUpdate(createdBoard.id);
+    logActivity('workflow', `Created new board '${createdBoard.name}'`);
+    addToast('workflow', 'Board Created', `Created board '${createdBoard.name}'`);
+  };
+
+  // Rename board
+  const handleRenameBoard = async (boardId: string, newName: string) => {
+    await renameBoard(boardId, newName);
+    setBoards((prev) => prev.map((b) => (b.id === boardId ? { ...b, name: newName } : b)));
+    if (activeBoard?.id === boardId) {
+      setActiveBoard((prev) => (prev ? { ...prev, name: newName } : null));
+    }
+    broadcastWorkflowUpdate(boardId);
+    addToast('workflow', 'Board Renamed', `Board renamed to '${newName}'`);
+  };
+
+  // Delete board
+  const handleDeleteBoard = async (boardId: string) => {
+    const targetBoard = boards.find((b) => b.id === boardId);
+    await deleteBoard(boardId);
+    const updatedBoards = boards.filter((b) => b.id !== boardId);
+    setBoards(updatedBoards);
+    if (activeBoard?.id === boardId) {
+      const nextBoard = updatedBoards[0] || null;
+      setActiveBoard(nextBoard);
+      if (nextBoard) {
+        localStorage.setItem(getActiveBoardStorageKey(), nextBoard.id);
+        await reloadActiveBoard(nextBoard);
+      } else {
+        setColumns([]);
+        setCards([]);
+      }
+    }
+    broadcastWorkflowUpdate();
+    logActivity('workflow', `Deleted board '${targetBoard?.name || 'Board'}'`);
+    addToast('workflow', 'Board Deleted', `Board '${targetBoard?.name || 'Board'}' was deleted`);
+  };
+
+  // Save updated columns from EditBoardModal
+  const handleSaveColumns = async (
+    editedColumns: Array<{
+      id: string;
+      name: string;
+      description: string;
+      color: string;
+      column_type: ColumnType;
+      position: number;
+    }>
+  ) => {
+    if (!activeBoard) return;
+    const updated = await saveBoardColumns(activeBoard.id, editedColumns);
+    setColumns(updated);
+    // Reload cards for updated columns
+    const boardCards = await getCardsForBoard(
+      activeBoard.id,
+      updated.map((c) => c.id)
+    );
+    setCards(boardCards);
+    broadcastWorkflowUpdate(activeBoard.id);
+    addToast('workflow', 'Board Updated', 'Columns and stages saved successfully');
+  };
+
+  // Delete column with relocate
+  const handleDeleteColumnWithRelocate = async (colId: string, targetColId?: string) => {
+    if (!activeBoard) return;
+    await deleteBoardColumn(activeBoard.id, colId, targetColId);
+    const updatedCols = await getBoardColumns(activeBoard.id);
+    setColumns(updatedCols);
+    const boardCards = await getCardsForBoard(
+      activeBoard.id,
+      updatedCols.map((c) => c.id)
+    );
+    setCards(boardCards);
+    broadcastWorkflowUpdate(activeBoard.id);
+    addToast('workflow', 'Column Removed', 'Column removed and cards updated');
+  };
+
   const openAdd = (columnId: string) => {
-    setForm(emptyForm(columnId));
+    const targetCol = columnId || columns[0]?.id || '';
+    setForm(emptyForm(targetCol));
     setInlineNew(false);
     setNewContact({ name: '', company: '', email: '', phone: '', status: 'Lead' });
     setFormError(null);
@@ -286,6 +431,7 @@ export default function WorkflowBoard() {
       const contact = contactById.get(contactId) ?? contacts.find((c) => c.id === contactId);
       await createWorkflowCard({
         column_id: form.column_id,
+        board_id: activeBoard?.id || null,
         contact_id: contactId,
         title: contact?.name ?? 'Client',
         status_note: form.status_note,
@@ -299,7 +445,10 @@ export default function WorkflowBoard() {
         addToast('workflow', 'Card Added', `${contact?.name ?? 'Client'} added to ${targetCol?.name ?? 'board'}`);
       }
       setAddOpen(false);
-      await load();
+      if (activeBoard) {
+        await reloadActiveBoard(activeBoard);
+      }
+      broadcastWorkflowUpdate(activeBoard?.id);
     } catch (err) {
       setFormError(getErrorMessage(err, 'Failed to add card. Please try again.'));
     } finally {
@@ -319,7 +468,10 @@ export default function WorkflowBoard() {
           addToast('workflow', 'Card Moved', `${contact?.name ?? 'Card'} moved to '${targetCol.name}'`);
         }
       }
-      await load();
+      if (activeBoard) {
+        await reloadActiveBoard(activeBoard);
+      }
+      broadcastWorkflowUpdate(activeBoard?.id);
     } catch (err) {
       addToast('error', 'Move failed', getErrorMessage(err, 'Could not move card to selected column.'));
     }
@@ -330,7 +482,10 @@ export default function WorkflowBoard() {
     try {
       await deleteWorkflowCard(deleteTarget.id);
       setDeleteTarget(null);
-      await load();
+      if (activeBoard) {
+        await reloadActiveBoard(activeBoard);
+      }
+      broadcastWorkflowUpdate(activeBoard?.id);
     } catch (err) {
       addToast('error', 'Delete failed', getErrorMessage(err, 'Could not delete card from workflow.'));
     }
@@ -405,11 +560,14 @@ export default function WorkflowBoard() {
 
   if (loading) {
     return (
-      <div className="p-6 md:p-8 max-w-7xl mx-auto">
-        <PageHeader title="Workflow Board" subtitle="Loading..." />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+        <PageHeader title="Workflow Board" subtitle="Loading customizable pipelines..." />
+        <div className="flex gap-4 overflow-x-auto pb-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-64 bg-gray-100 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl animate-pulse" />
+            <div
+              key={i}
+              className="w-80 h-96 bg-gray-100 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-2xl animate-pulse shrink-0"
+            />
           ))}
         </div>
       </div>
@@ -428,12 +586,27 @@ export default function WorkflowBoard() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Header with Board Selector & Actions */}
       <PageHeader
-        title="Workflow Board"
+        title={
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-2xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">
+              Workflow Board
+            </span>
+            <BoardSelector
+              boards={boards}
+              selectedBoard={activeBoard}
+              onSelectBoard={handleSelectBoard}
+              onOpenNewBoardModal={() => setNewBoardModalOpen(true)}
+              onRenameBoard={handleRenameBoard}
+              onDeleteBoard={handleDeleteBoard}
+            />
+          </div>
+        }
         subtitle={`${cards.length} ${cards.length === 1 ? 'client' : 'clients'} across ${columns.length} columns`}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -446,6 +619,13 @@ export default function WorkflowBoard() {
             >
               <Sparkles className="w-4 h-4 text-violet-500" /> AI Note Summarizer
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setEditBoardModalOpen(true)}
+              className="gap-2 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800"
+            >
+              <SlidersHorizontal className="w-4 h-4" /> Edit board
+            </Button>
             <Button onClick={() => openAdd(columns[0]?.id ?? '')}>
               <span className="flex items-center gap-2"><Plus className="w-4 h-4" /> Add Card</span>
             </Button>
@@ -454,7 +634,7 @@ export default function WorkflowBoard() {
       />
 
       {/* Search bar */}
-      <div className="mb-5 relative">
+      <div className="relative">
         <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           value={search}
@@ -464,10 +644,11 @@ export default function WorkflowBoard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Columns Horizontal Scroll Container */}
+      <div className="flex gap-4 overflow-x-auto pb-6 pt-1 items-start min-w-0 scrollbar-thin">
         {columns.map((col) => {
           const colCards = filteredCards.filter((c) => c.column_id === col.id);
-          const stageInfo = getStageInfo(col.name);
+          const colPill = columnColorPills[col.color || 'violet'] || columnColorPills.violet;
 
           return (
             <div
@@ -489,7 +670,7 @@ export default function WorkflowBoard() {
                   handleMove(card, col.id);
                 }
               }}
-              className={`bg-purple-50/20 dark:bg-[#111625] border border-purple-100/60 dark:border-slate-800 rounded-2xl p-3 flex flex-col min-h-[440px] transition-all duration-200 ${
+              className={`w-[300px] sm:w-[320px] shrink-0 bg-purple-50/20 dark:bg-[#111625] border border-purple-100/60 dark:border-slate-800 rounded-2xl p-3 flex flex-col min-h-[460px] transition-all duration-200 ${
                 dragOverColumnId === col.id ? 'ring-2 ring-violet-500/50 bg-purple-100/40 dark:bg-slate-800/80' : ''
               }`}
             >
@@ -500,7 +681,7 @@ export default function WorkflowBoard() {
                     <h3 className="text-xs sm:text-sm font-bold tracking-wider uppercase text-slate-900 dark:text-slate-100 truncate">
                       {col.name}
                     </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-slate-800 text-purple-700 dark:text-violet-300 text-[10px] font-extrabold border border-purple-200/60 dark:border-slate-700 shrink-0">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border shrink-0 ${colPill}`}>
                       ({colCards.length})
                     </span>
                   </div>
@@ -513,7 +694,7 @@ export default function WorkflowBoard() {
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                  {stageInfo.desc}
+                  {col.description || 'Pipeline stage'}
                 </p>
               </div>
 
@@ -524,7 +705,9 @@ export default function WorkflowBoard() {
                     <div className="w-12 h-12 rounded-2xl bg-purple-100/50 dark:bg-slate-800/50 flex items-center justify-center mb-3">
                       <Users className="w-6 h-6 text-purple-400 dark:text-slate-500" />
                     </div>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">No deals in {col.name} yet</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      No deals in {col.name} yet
+                    </p>
                     <button
                       onClick={() => openAdd(col.id)}
                       className="mt-2 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline"
@@ -537,6 +720,7 @@ export default function WorkflowBoard() {
                     const contact = card.contact_id ? contactById.get(card.contact_id) : null;
                     const cardValue = getCardDealValue(card, contact, invoicesList);
                     const p = priorityStyles[card.priority];
+                    const winProb = calculateDealWinProbability(card, col, columns);
                     const dateStr = card.due_date
                       ? `Due ${new Date(card.due_date).toLocaleDateString()}`
                       : card.moved_at
@@ -560,20 +744,22 @@ export default function WorkflowBoard() {
                           draggedCardId === card.id ? 'opacity-50 scale-95' : ''
                         }`}
                       >
-                        {/* Header: Client / Organization Name + Status Badge */}
+                        {/* Header: Client / Organization Name + Stage/Win Badge */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
                               {contact?.name ?? card.title ?? 'Client'}
                             </p>
                             {contact?.company && (
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">{contact.company}</p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                                {contact.company}
+                              </p>
                             )}
                           </div>
                           <span
-                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md shrink-0 uppercase tracking-wide ${stageInfo.badge.class}`}
+                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md shrink-0 uppercase tracking-wide border ${winProb.badgeClass}`}
                           >
-                            {stageInfo.badge.label}
+                            {col.name}
                           </span>
                         </div>
 
@@ -587,27 +773,36 @@ export default function WorkflowBoard() {
                         {/* Deal Value & Win Probability Badge */}
                         <div className="flex items-center justify-between gap-1 pt-1.5 border-t border-purple-100/60 dark:border-slate-800">
                           <div>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase font-medium">Deal Value</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase font-medium">
+                              Deal Value
+                            </span>
                             <span className="text-xs sm:text-sm font-extrabold text-violet-700 dark:text-violet-400">
                               {formatCurrency(cardValue, currencyCode, currencyDisplayMode)}
                             </span>
                           </div>
                           <div className="flex flex-col items-end gap-1">
-                            <span className={`text-[9px] font-semibold px-1.5 py-0.2 rounded ${p.badge}`}>{p.label}</span>
-                            <DealWinProbabilityBadge card={card} column={columnById.get(card.column_id)} size="sm" />
+                            <span className={`text-[9px] font-semibold px-1.5 py-0.2 rounded ${p.badge}`}>
+                              {p.label}
+                            </span>
+                            <DealWinProbabilityBadge
+                              card={card}
+                              column={col}
+                              allColumns={columns}
+                              size="sm"
+                            />
                           </div>
                         </div>
 
-                        {/* Progress Bar */}
+                        {/* Progress Bar (Position ÷ Number of Open Columns) */}
                         <div className="space-y-1 pt-0.5">
                           <div className="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                             <span>Stage Progress</span>
-                            <span>{stageInfo.progress}%</span>
+                            <span>{winProb.score}%</span>
                           </div>
                           <div className="w-full bg-purple-100/60 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                             <div
                               className="bg-gradient-to-r from-violet-500 via-purple-500 to-emerald-400 h-1.5 rounded-full transition-all duration-300"
-                              style={{ width: `${stageInfo.progress}%` }}
+                              style={{ width: `${winProb.score}%` }}
                             />
                           </div>
                         </div>
@@ -632,18 +827,20 @@ export default function WorkflowBoard() {
                               </button>
                               {moveMenuId === card.id && (
                                 <div className="absolute z-20 mt-1 right-0 w-48 bg-white dark:bg-[#151C2C] border border-purple-100 dark:border-slate-800 rounded-xl shadow-lg py-1">
-                                  {columns.filter((c) => c.id !== card.column_id).map((target) => (
-                                    <button
-                                      key={target.id}
-                                      onClick={() => {
-                                        setMoveMenuId(null);
-                                        handleMove(card, target.id);
-                                      }}
-                                      className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-slate-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-                                    >
-                                      Move to {target.name}
-                                    </button>
-                                  ))}
+                                  {columns
+                                    .filter((c) => c.id !== card.column_id)
+                                    .map((target) => (
+                                      <button
+                                        key={target.id}
+                                        onClick={() => {
+                                          setMoveMenuId(null);
+                                          handleMove(card, target.id);
+                                        }}
+                                        className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-slate-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                                      >
+                                        Move to {target.name}
+                                      </button>
+                                    ))}
                                 </div>
                               )}
                             </div>
@@ -668,7 +865,7 @@ export default function WorkflowBoard() {
       </div>
 
       {/* Add card modal */}
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Add client to workflow">
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Add card to workflow">
         <form onSubmit={handleAdd} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Client</label>
@@ -718,7 +915,7 @@ export default function WorkflowBoard() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Status note</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Status note / Deal Title</label>
             <input
               value={form.status_note}
               onChange={(e) => setForm({ ...form, status_note: e.target.value })}
@@ -778,7 +975,12 @@ export default function WorkflowBoard() {
             {/* Quick Actions Bar */}
             <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 dark:bg-[#111625] rounded-xl border border-gray-200 dark:border-slate-800">
               <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 w-full sm:w-auto mb-1 sm:mb-0">Quick Actions:</span>
-              <DealWinProbabilityBadge card={detailCard} column={columnById.get(detailCard.column_id)} size="md" />
+              <DealWinProbabilityBadge
+                card={detailCard}
+                column={columnById.get(detailCard.column_id)}
+                allColumns={columns}
+                size="md"
+              />
               <button
                 type="button"
                 onClick={() => {
@@ -973,7 +1175,7 @@ export default function WorkflowBoard() {
         initialNotes={summarizerNotes}
       />
 
-      {/* Delete confirmation */}
+      {/* Delete Card Confirmation Modal */}
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete card?">
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
           This removes the workflow card. The linked contact and their invoices are not affected.
@@ -983,6 +1185,29 @@ export default function WorkflowBoard() {
           <button onClick={handleDelete} className="px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white">Delete</button>
         </div>
       </Modal>
+
+      {/* New Board Modal */}
+      <NewBoardModal
+        isOpen={newBoardModalOpen}
+        onClose={() => setNewBoardModalOpen(false)}
+        onSubmit={handleCreateBoard}
+        boardCount={boards.length}
+        maxBoards={MAX_BOARDS_PER_USER}
+      />
+
+      {/* Edit Board Modal */}
+      {activeBoard && (
+        <EditBoardModal
+          isOpen={editBoardModalOpen}
+          onClose={() => setEditBoardModalOpen(false)}
+          board={activeBoard}
+          columns={columns}
+          cards={cards}
+          onSaveColumns={handleSaveColumns}
+          onRenameBoard={(newName) => handleRenameBoard(activeBoard.id, newName)}
+          onDeleteColumnWithRelocate={handleDeleteColumnWithRelocate}
+        />
+      )}
     </div>
   );
 }

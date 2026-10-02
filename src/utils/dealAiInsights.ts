@@ -15,12 +15,15 @@ export type WinProbabilityResult = {
 
 export function calculateDealWinProbability(
   card: WorkflowCard,
-  column?: WorkflowColumn | null
+  column?: (WorkflowColumn & { column_type?: string }) | null,
+  allColumns?: Array<{ id: string; position: number; column_type?: string; name?: string }>
 ): WinProbabilityResult {
+  const colType = column?.column_type;
   const colName = (column?.name ?? '').trim().toLowerCase();
 
-  // Handle closed won or closed lost
+  // 1. Handle won column
   if (
+    colType === 'won' ||
     colName.includes('resolved') ||
     colName.includes('completed') ||
     colName.includes('won') ||
@@ -41,7 +44,9 @@ export function calculateDealWinProbability(
     };
   }
 
+  // 2. Handle lost column
   if (
+    colType === 'lost' ||
     colName.includes('lost') ||
     colName.includes('cancelled') ||
     colName.includes('declined') ||
@@ -61,87 +66,44 @@ export function calculateDealWinProbability(
     };
   }
 
-  // 1. Base stage probability
-  let stageBase = 35;
-  if (colName.includes('lead') || colName.includes('new') || colName.includes('inquiry')) {
-    stageBase = 20;
-  } else if (colName.includes('contacted') || colName.includes('outreach') || colName.includes('qualification')) {
-    stageBase = 35;
-  } else if (colName.includes('proposal') || colName.includes('pitch') || colName.includes('demo') || colName.includes('estimate')) {
-    stageBase = 55;
-  } else if (colName.includes('negotiation') || colName.includes('contract') || colName.includes('review')) {
-    stageBase = 75;
-  } else if (colName.includes('closing') || colName.includes('verbal') || colName.includes('signing')) {
-    stageBase = 90;
-  }
-
-  // 2. Deal age calculation
-  const referenceTime = card.moved_at ? new Date(card.moved_at).getTime() : new Date(card.created_at).getTime();
-  const now = Date.now();
-  const ageDays = Math.max(0, Math.floor((now - referenceTime) / (1000 * 60 * 60 * 24)));
-
-  let ageAdjustment = 0;
-  const factors: string[] = [];
-
-  if (ageDays <= 5) {
-    ageAdjustment = 5;
-    factors.push('Fresh deal momentum (+5% age boost)');
-  } else if (ageDays <= 21) {
-    ageAdjustment = 0;
-    factors.push('Optimal stage cycle duration');
-  } else if (ageDays <= 45) {
-    ageAdjustment = -10;
-    factors.push(`Aging deal (${ageDays} days in stage, -10% penalty)`);
+  // 3. Open columns: Auto-calculated scaled by position / number of open columns
+  let stageScore = 50;
+  if (allColumns && allColumns.length > 0) {
+    const openCols = allColumns
+      .filter((c) => c.column_type !== 'won' && c.column_type !== 'lost')
+      .sort((a, b) => a.position - b.position);
+    const numOpen = Math.max(1, openCols.length);
+    const colIdx = openCols.findIndex((c) => c.id === column?.id);
+    const effectiveIdx = colIdx >= 0 ? colIdx : Math.min(column?.position ?? 0, numOpen - 1);
+    // position / (numOpen + 1) scaled so first column starts around 20-25% and last open column nears 75-80%
+    stageScore = Math.round(((effectiveIdx + 1) / (numOpen + 1)) * 100);
   } else {
-    ageAdjustment = -25;
-    factors.push(`Stale deal (${ageDays} days in stage, -25% penalty)`);
+    if (colName.includes('lead') || colName.includes('new') || colName.includes('inquiry')) {
+      stageScore = 25;
+    } else if (colName.includes('contacted') || colName.includes('proposal') || colName.includes('sent')) {
+      stageScore = 50;
+    } else if (colName.includes('progress') || colName.includes('negotiation')) {
+      stageScore = 75;
+    }
   }
 
-  // 3. Priority adjustment
-  let priorityAdjustment = 0;
-  if (card.priority === 'high') {
-    priorityAdjustment = 5;
-    factors.push('High priority deal (+5%)');
-  } else if (card.priority === 'low') {
-    priorityAdjustment = -5;
-    factors.push('Low priority attention (-5%)');
-  }
+  const score = Math.min(95, Math.max(5, stageScore));
 
-  // 4. Calculate total & clamp (5% - 95%)
-  let score = Math.round(stageBase + ageAdjustment + priorityAdjustment);
-  score = Math.max(5, Math.min(95, score));
-
-  // Determine badge styling & label
   let label: WinProbabilityResult['label'] = 'Moderate';
-  let colorClass = 'text-amber-600 dark:text-amber-400';
-  let bgClass = 'bg-amber-500';
-  let badgeClass = 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+  let colorClass = 'text-violet-600 dark:text-violet-400';
+  let bgClass = 'bg-violet-500';
+  let badgeClass = 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800';
 
-  if (score >= 80) {
-    label = 'Very High';
-    colorClass = 'text-emerald-600 dark:text-emerald-400';
-    bgClass = 'bg-emerald-500';
-    badgeClass = 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
-  } else if (score >= 60) {
-    label = 'High';
-    colorClass = 'text-teal-600 dark:text-teal-400';
-    bgClass = 'bg-teal-500';
-    badgeClass = 'bg-teal-50 dark:bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800';
-  } else if (score >= 40) {
-    label = 'Moderate';
+  if (score < 35) {
+    label = 'Low';
     colorClass = 'text-amber-600 dark:text-amber-400';
     bgClass = 'bg-amber-500';
-    badgeClass = 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
-  } else if (score >= 25) {
-    label = 'Low';
-    colorClass = 'text-orange-600 dark:text-orange-400';
-    bgClass = 'bg-orange-500';
-    badgeClass = 'bg-orange-50 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800';
-  } else {
-    label = 'Critical';
-    colorClass = 'text-rose-600 dark:text-rose-400';
-    bgClass = 'bg-rose-500';
-    badgeClass = 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800';
+    badgeClass = 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+  } else if (score >= 70) {
+    label = 'High';
+    colorClass = 'text-emerald-600 dark:text-emerald-400';
+    bgClass = 'bg-emerald-500';
+    badgeClass = 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
   }
 
   return {
@@ -150,11 +112,11 @@ export function calculateDealWinProbability(
     colorClass,
     bgClass,
     badgeClass,
-    ageDays,
-    stageBase,
-    ageAdjustment,
-    priorityAdjustment,
-    factors,
+    ageDays: 0,
+    stageBase: score,
+    ageAdjustment: 0,
+    priorityAdjustment: 0,
+    factors: [`Position-scaled probability: ${score}% in ${column?.name || 'pipeline stage'}`],
   };
 }
 

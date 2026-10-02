@@ -36,6 +36,7 @@ export function RevenueForecastWidget() {
   // Raw data state
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [boardColumns, setBoardColumns] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   // Default deal stage probabilities/weights
@@ -53,12 +54,21 @@ export function RevenueForecastWidget() {
         return;
       }
       try {
-        const [invRes, dealRes] = await Promise.all([
+        const [invRes, dealRes, bColRes] = await Promise.all([
           supabase.from('invoices').select('*').eq('workspace_id', workspaceId),
           supabase.from('deals').select('*').eq('workspace_id', workspaceId),
+          supabase.from('board_columns').select('id, column_type'),
         ]);
         setInvoices((invRes.data ?? []) as Invoice[]);
         setDeals((dealRes.data ?? []) as Deal[]);
+
+        const colMap: Record<string, string> = {};
+        if (bColRes.data) {
+          (bColRes.data as Array<{ id: string; column_type: string }>).forEach((col) => {
+            colMap[col.id] = col.column_type;
+          });
+        }
+        setBoardColumns(colMap);
       } catch (err) {
         console.error('Error fetching forecasting data:', err);
       } finally {
@@ -91,9 +101,13 @@ export function RevenueForecastWidget() {
   });
 
   deals.forEach((deal) => {
-    if (deal.stage !== 'Lost') {
+    const colType = deal.column_id ? boardColumns[deal.column_id] : undefined;
+    const isLost = colType === 'lost' || deal.stage === 'Lost';
+    const isWon = colType === 'won' || deal.stage === 'Won';
+
+    if (!isLost) {
       const code = 'USD'; // Deals in database default to USD
-      const prob = STAGE_PROBABILITIES[deal.stage] ?? 0.5;
+      const prob = isWon ? 1.0 : (STAGE_PROBABILITIES[deal.stage] ?? 0.5);
       const weightedValue = Number(deal.value || 0) * prob;
       currencyTotals[code] += weightedValue;
       grandTotalInBase += convertCurrency(weightedValue, code, currencyCode);
