@@ -137,10 +137,24 @@ const CustomTooltip = ({
 function isCardDeleted(card: unknown): boolean {
   if (!card || typeof card !== 'object') return false;
   const c = card as Record<string, unknown>;
-  if (c.is_deleted === true || c.is_deleted === 'true') return true;
-  if (c.deleted_at !== null && c.deleted_at !== undefined) return true;
-  if (c.archived === true || c.is_archived === true) return true;
-  if (c.status === 'deleted' || c.status === 'archived') return true;
+  // 1. Boolean / truthy flags for is_deleted
+  if (c.is_deleted === true || c.is_deleted === 'true' || c.is_deleted === 1 || c.is_deleted === '1') return true;
+  // 2. deleted_at timestamp
+  if (c.deleted_at !== null && c.deleted_at !== undefined && c.deleted_at !== '') return true;
+  // 3. Generic deleted flags
+  if (c.deleted === true || c.deleted === 'true' || c.deleted === 1 || c.deleted === '1') return true;
+  // 4. Archived flags
+  if (c.archived === true || c.archived === 'true' || c.is_archived === true || c.is_archived === 'true' || c.is_archived === 1 || c.is_archived === '1') return true;
+  if (c.archived_at !== null && c.archived_at !== undefined && c.archived_at !== '') return true;
+  // 5. String statuses
+  const status = typeof c.status === 'string' ? c.status.toLowerCase().trim() : '';
+  const stage = typeof c.stage === 'string' ? c.stage.toLowerCase().trim() : '';
+  const statusNote = typeof c.status_note === 'string' ? c.status_note.toLowerCase().trim() : '';
+
+  if (status === 'deleted' || status === 'archived' || status === 'trash') return true;
+  if (stage === 'deleted' || stage === 'archived' || stage === 'trash') return true;
+  if (statusNote === 'deleted' || statusNote === 'archived') return true;
+
   return false;
 }
 
@@ -155,27 +169,48 @@ function isCompletedStage(
       name.includes('won') ||
       name.includes('lost') ||
       name.includes('closed') ||
+      name.includes('close') ||
       name.includes('paid') ||
       name.includes('completed') ||
+      name.includes('complete') ||
       name.includes('resolved') ||
       name.includes('delivered') ||
       name.includes('done') ||
       name.includes('settled') ||
-      name.includes('finished')
+      name.includes('finished') ||
+      name.includes('archived') ||
+      name.includes('archive') ||
+      name.includes('cancelled') ||
+      name.includes('canceled')
     ) {
       return true;
     }
   }
   if (card && typeof card === 'object') {
     const c = card as Record<string, unknown>;
-    const stage = String(c.stage || c.status_note || '').trim().toLowerCase();
+    const stage = String(c.stage || '').trim().toLowerCase();
+    const statusNote = String(c.status_note || '').trim().toLowerCase();
+    const status = String(c.status || '').trim().toLowerCase();
+    const colName = String(c.column_name || '').trim().toLowerCase();
+    const combined = `${stage} ${statusNote} ${status} ${colName}`;
+
     if (
-      stage.includes('won') ||
-      stage.includes('closed') ||
-      stage.includes('paid & closed') ||
-      stage.includes('completed') ||
-      stage.includes('resolved') ||
-      stage.includes('settled')
+      combined.includes('won') ||
+      combined.includes('lost') ||
+      combined.includes('closed') ||
+      combined.includes('close') ||
+      combined.includes('paid') ||
+      combined.includes('completed') ||
+      combined.includes('complete') ||
+      combined.includes('resolved') ||
+      combined.includes('settled') ||
+      combined.includes('finished') ||
+      combined.includes('done') ||
+      combined.includes('delivered') ||
+      combined.includes('archived') ||
+      combined.includes('archive') ||
+      combined.includes('cancelled') ||
+      combined.includes('canceled')
     ) {
       return true;
     }
@@ -256,14 +291,15 @@ export default function Dashboard() {
           resolvedColumns = legacyColumns;
         }
 
-        // Filter cards for the current workflow board (never include deleted or foreign cards)
+        // Filter cards for the current workflow board (never include deleted, archived, or foreign cards)
         const activeColIds = new Set(resolvedColumns.map((col) => col.id));
         let boardCards: WorkflowCard[] = [];
-        if (curBoard && activeColIds.size > 0) {
+        if (activeColIds.size > 0) {
           boardCards = allCards.filter(
             (card) =>
               !isCardDeleted(card) &&
-              (card.board_id === curBoard.id || activeColIds.has(card.column_id))
+              activeColIds.has(card.column_id) &&
+              (card.board_id ? (curBoard ? card.board_id === curBoard.id : true) : true)
           );
         } else {
           boardCards = allCards.filter((card) => !isCardDeleted(card));
@@ -347,9 +383,17 @@ export default function Dashboard() {
 
   // 2. Stalled Workflow Cards > 7 Days in current stage
   const stalledCards = openCards.filter((card) => {
+    // 1. Explicitly filter out deleted or archived cards
     if (isCardDeleted(card)) return false;
+
+    // 2. Must belong to an active column on the current board
     const col = activeColumnMap.get(card.column_id);
-    if (!col || isCompletedStage(col, card)) return false;
+    if (!col) return false;
+
+    // 3. Filter out completed stages (e.g., 'Paid & Closed', 'Closed', 'Won', 'Lost', etc.)
+    if (completedColumnIds.has(card.column_id) || isCompletedStage(col, card)) {
+      return false;
+    }
 
     const movedMs = card.moved_at
       ? new Date(card.moved_at).getTime()
@@ -701,7 +745,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${stalledRisk.badge}`}>
-                  {stalledRisk.stalledBadgeText}
+                  {stalledCards.length === 0 ? '0 Stalled' : `${stalledCards.length} Stalled`}
                 </span>
               </div>
 

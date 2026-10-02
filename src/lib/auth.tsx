@@ -158,6 +158,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             error: 'A server-side error occurred (HTTP 500) during sign in. This typically happens when there is an issue with database triggers or RLS policies on the Supabase project. Please check the Supabase logs.'
           };
         }
+        if (
+          msg &&
+          (msg.toLowerCase().includes('invalid login credentials') ||
+            msg.toLowerCase().includes('invalid credentials'))
+        ) {
+          return {
+            error: "Incorrect email or password. Please double-check your credentials, click 'Forgot password?' to reset your password, or switch to 'Sign Up' if you don't have an account yet."
+          };
+        }
         const displayMsg = msg || (typeof error === 'object' ? JSON.stringify(error) : String(error)) || 'Failed to sign in';
         return { error: displayMsg === '{}' ? 'Failed to sign in. Please check your credentials.' : displayMsg };
       }
