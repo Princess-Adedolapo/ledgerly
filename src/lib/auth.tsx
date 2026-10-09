@@ -33,6 +33,8 @@ function purgeUserSessionData() {
       localStorage.removeItem('invoice_sender_phone');
       localStorage.removeItem('invoice_sender_email');
       localStorage.removeItem('invoice_sender_website');
+      localStorage.removeItem('invoice_brand_logo');
+      localStorage.removeItem('invoice_brand_color');
       sessionStorage.clear();
     } catch {
       /* ignore storage errors */

@@ -8,10 +8,11 @@ import type { CurrencyCode, CurrencyDisplayMode, HistoricalCurrencyMode } from '
 import { PageHeader, Card, Button, Toast } from '../components/ui';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useNotificationPreferences, type NotificationPreferences } from '../contexts/NotificationContext';
-import { LogOut, User, Shield, Bell, Building2, Palette, Check, Globe, Type, Trash2, AlertTriangle, X, Users } from 'lucide-react';
+import { LogOut, User, Shield, Bell, Palette, Check, Globe, Type, Trash2, AlertTriangle, X, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { TeamTab } from '../components/workspace/TeamTab';
 import { DeleteWorkspaceSection } from '../components/settings/DeleteWorkspaceSection';
+import { BrandingSection } from '../components/settings/BrandingSection';
 import { getErrorMessage } from '../lib/errorUtils';
 
 const DISPLAY_NAME_REGEX = /^[a-zA-Z0-9 -]+$/;
@@ -40,10 +41,6 @@ export default function Settings() {
     updatePreferences,
   } = useUserPreferences();
   const navigate = useNavigate();
-  const [nameInput, setNameInput] = useState(businessName);
-  const [savingName, setSavingName] = useState(false);
-  const [taglineInput, setTaglineInput] = useState(businessTagline);
-  const [savingTagline, setSavingTagline] = useState(false);
   const [toast, setToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastError, setToastError] = useState(false);
@@ -120,15 +117,6 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    setNameInput(businessName);
-  }, [businessName]);
-
-  useEffect(() => {
-    setTaglineInput(businessTagline);
-  }, [businessTagline]);
-
-
-  useEffect(() => {
     setDisplayNameInput(displayName ?? '');
   }, [displayName]);
 
@@ -144,34 +132,6 @@ export default function Settings() {
     setToast(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(false), 3000);
-  };
-
-  const handleSaveName = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = nameInput.trim();
-    if (!trimmed) return;
-    setSavingName(true);
-    try {
-      await setBusinessName(trimmed);
-      showToast('Business name saved successfully');
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to save name', true);
-    } finally {
-      setSavingName(false);
-    }
-  };
-
-  const handleSaveTagline = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingTagline(true);
-    try {
-      await setBusinessTagline(taglineInput.trim());
-      showToast('Tagline saved successfully');
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to save tagline', true);
-    } finally {
-      setSavingTagline(false);
-    }
   };
 
   const handleSaveDisplayName = async (e: React.FormEvent) => {
@@ -241,86 +201,17 @@ export default function Settings() {
         <TeamTab />
       ) : (
       <div className="space-y-6">
-        {/* Branding */}
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-lg bg-violet-600/10 dark:bg-violet-600/20 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-            </div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Branding</h2>
-          </div>
-          <form onSubmit={handleSaveName} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Business Name</label>
-              <input
-                type="text"
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                placeholder="CatalystAI Hub"
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all"
-              />
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                This name appears in the sidebar, browser tab, and dashboard heading.
-              </p>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <Button type="submit" disabled={savingName || !workspaceReady || nameInput.trim() === businessName}>
-                  <span className="flex items-center gap-2">
-                    {savingName ? 'Saving...' : <><Check className="w-4 h-4" /> Save</>}
-                  </span>
-                </Button>
-                {!workspaceReady && (
-                  <span className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-                    <span className="w-3 h-3 rounded-full border-2 border-gray-300 dark:border-gray-600 border-t-violet-500 animate-spin" />
-                    Loading workspace…
-                  </span>
-                )}
-              </div>
-
-              {workspaceReady && isOwner && (
-                <button
-                  type="button"
-                  onClick={() => setDeleteWorkspaceOpen(true)}
-                  className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium flex items-center gap-1.5 transition-colors focus:outline-none"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete Workspace
-                </button>
-              )}
-            </div>
-          </form>
-
-          <form onSubmit={handleSaveTagline} className="space-y-4 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800/50">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Business Tagline</label>
-              <input
-                type="text"
-                value={taglineInput}
-                onChange={(e) => setTaglineInput(e.target.value)}
-                placeholder="Professional Services"
-                maxLength={80}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all"
-              />
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                Shown under your business name on invoices. Leave blank to hide it.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button type="submit" disabled={savingTagline || !workspaceReady || taglineInput.trim() === businessTagline.trim()}>
-                <span className="flex items-center gap-2">
-                  {savingTagline ? 'Saving...' : <><Check className="w-4 h-4" /> Save Tagline</>}
-                </span>
-              </Button>
-              {!workspaceReady && (
-                <span className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-                  <span className="w-3 h-3 rounded-full border-2 border-gray-300 dark:border-gray-600 border-t-violet-500 animate-spin" />
-                  Loading workspace…
-                </span>
-              )}
-            </div>
-          </form>
-        </Card>
+        {/* Branding & Client Portal Document Styling */}
+        <BrandingSection
+          businessName={businessName}
+          setBusinessName={setBusinessName}
+          businessTagline={businessTagline}
+          setBusinessTagline={setBusinessTagline}
+          workspaceReady={workspaceReady}
+          isOwner={isOwner}
+          onDeleteWorkspace={() => setDeleteWorkspaceOpen(true)}
+          showToast={showToast}
+        />
 
         {/* Localization */}
         <Card className="p-6">

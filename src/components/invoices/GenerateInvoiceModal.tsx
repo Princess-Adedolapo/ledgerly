@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Plus, Trash2, Download, Percent, Gift, Building2, Mail, Phone, Globe, MapPin } from 'lucide-react';
+import { X, Plus, Trash2, Download, Percent, Gift, Building2, Mail, Phone, Globe, MapPin, Palette, Upload } from 'lucide-react';
 import type { Contact } from '../../lib/supabase';
 import SearchableContactSelect from '../contacts/SearchableContactSelect';
 import { Button } from '../ui';
@@ -7,6 +7,7 @@ import { useWorkspace } from '../../lib/workspace';
 import { useUserPreferences } from '../../lib/userPreferences';
 import { formatCurrency } from '../../lib/currency';
 import { getErrorMessage } from '../../lib/errorUtils';
+import { DEFAULT_BRAND_COLOR, getBrandSettings, saveBrandSettings, processLogoImageFile, getContrastTextColor, BRAND_COLOR_PRESETS } from '../../lib/branding';
 
 export interface LineItem {
   id: string;
@@ -70,10 +71,17 @@ export function GenerateInvoiceModal({
   const [senderPhone, setSenderPhone] = useState(() => localStorage.getItem('invoice_sender_phone') || '');
   const [senderEmail, setSenderEmail] = useState(() => localStorage.getItem('invoice_sender_email') || '');
   const [senderWebsite, setSenderWebsite] = useState(() => localStorage.getItem('invoice_sender_website') || '');
+  const [senderLogo, setSenderLogo] = useState(() => localStorage.getItem('invoice_brand_logo') || '');
+  const [brandColor, setBrandColor] = useState(() => localStorage.getItem('invoice_brand_color') || DEFAULT_BRAND_COLOR);
+  const [uploadingModalLogo, setUploadingModalLogo] = useState(false);
+  const modalLogoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setInvoiceCurrency(currencyCode);
+      const currentBrand = getBrandSettings();
+      setSenderLogo(currentBrand.logoUrl);
+      setBrandColor(currentBrand.brandColor || DEFAULT_BRAND_COLOR);
       if (initialCustomerName) {
         setCustomerName(initialCustomerName);
       }
@@ -178,6 +186,8 @@ export function GenerateInvoiceModal({
           phone: senderPhone || '',
           email: senderEmail || '',
           website: senderWebsite || '',
+          logo_url: senderLogo,
+          brand_color: brandColor,
         },
       });
       // Reset form
@@ -334,6 +344,105 @@ export function GenerateInvoiceModal({
                       placeholder="e.g. www.mybrand.com"
                       className="w-full px-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
                     />
+                  </div>
+                </div>
+
+                {/* Brand Logo & Accent Color Row */}
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700/60 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="file"
+                      ref={modalLogoInputRef}
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setUploadingModalLogo(true);
+                          try {
+                            const optimized = await processLogoImageFile(file);
+                            setSenderLogo(optimized);
+                            saveBrandSettings({ logoUrl: optimized, brandColor });
+                          } catch (err) {
+                            console.error(err);
+                          } finally {
+                            setUploadingModalLogo(false);
+                          }
+                        }
+                        if (modalLogoInputRef.current) modalLogoInputRef.current.value = '';
+                      }}
+                    />
+                    {senderLogo ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-8 rounded-lg bg-white border border-gray-200 dark:border-gray-700 p-1 flex items-center justify-center">
+                          <img src={senderLogo} alt="Logo" className="max-h-full max-w-full object-contain" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => modalLogoInputRef.current?.click()}
+                          className="text-[11px] text-violet-600 dark:text-violet-400 font-semibold hover:underline"
+                        >
+                          Change Logo
+                        </button>
+                        <span className="text-gray-300 dark:text-gray-600">•</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSenderLogo('');
+                            saveBrandSettings({ logoUrl: '', brandColor });
+                          }}
+                          className="text-[11px] text-rose-500 font-semibold hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => modalLogoInputRef.current?.click()}
+                        disabled={uploadingModalLogo}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-violet-500 flex items-center gap-1.5 transition-colors"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-violet-500" />
+                        {uploadingModalLogo ? 'Processing...' : 'Upload Business Logo'}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Brand Color:</span>
+                    <div className="flex items-center gap-1">
+                      {BRAND_COLOR_PRESETS.slice(0, 5).map((p) => (
+                        <button
+                          key={p.hex}
+                          type="button"
+                          title={p.name}
+                          onClick={() => {
+                            setBrandColor(p.hex);
+                            saveBrandSettings({ logoUrl: senderLogo, brandColor: p.hex });
+                          }}
+                          className={`w-5 h-5 rounded-md transition-transform ${brandColor.toLowerCase() === p.hex.toLowerCase() ? 'ring-2 ring-violet-500 scale-110' : 'opacity-80 hover:opacity-100'}`}
+                          style={{ backgroundColor: p.hex }}
+                        />
+                      ))}
+                      <label className="relative cursor-pointer ml-1">
+                        <input
+                          type="color"
+                          value={brandColor.startsWith('#') && brandColor.length === 7 ? brandColor : DEFAULT_BRAND_COLOR}
+                          onChange={(e) => {
+                            setBrandColor(e.target.value);
+                            saveBrandSettings({ logoUrl: senderLogo, brandColor: e.target.value });
+                          }}
+                          className="sr-only"
+                        />
+                        <div
+                          className="w-5 h-5 rounded-md border border-gray-300 dark:border-gray-600 cursor-pointer flex items-center justify-center shadow-xs"
+                          style={{ backgroundColor: brandColor }}
+                        >
+                          <Palette className="w-2.5 h-2.5 text-white opacity-80" />
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -502,8 +611,8 @@ export function GenerateInvoiceModal({
                 className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col"
                 style={{ minHeight: '520px' }}
               >
-                {/* Accent Top Bar (Corporate Slate #1e293b) */}
-                <div className="h-3 bg-slate-800 shrink-0" />
+                {/* Accent Top Bar */}
+                <div className="h-3 shrink-0 transition-colors duration-200" style={{ backgroundColor: brandColor }} />
 
                 <div className="p-8 flex-1 flex flex-col justify-between">
                   <div>
@@ -512,9 +621,25 @@ export function GenerateInvoiceModal({
                       {/* Logo and Sender Profile */}
                       <div className="space-y-3 text-left">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-white font-extrabold text-xl shrink-0 tracking-wider">
-                            {(senderName || businessName || 'S')[0]?.toUpperCase()}
-                          </div>
+                          {senderLogo ? (
+                            <div className="p-1 rounded-xl bg-white border border-gray-200 shadow-2xs flex items-center justify-center max-h-12 max-w-[120px] shrink-0">
+                              <img
+                                src={senderLogo}
+                                alt="Logo"
+                                className="max-h-10 max-w-full object-contain"
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className="w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-xl shrink-0 tracking-wider shadow-xs"
+                              style={{
+                                backgroundColor: brandColor,
+                                color: getContrastTextColor(brandColor),
+                              }}
+                            >
+                              {(senderName || businessName || 'S')[0]?.toUpperCase()}
+                            </div>
+                          )}
                           <div className="text-left">
                             <p className="text-lg font-bold text-slate-900 leading-tight">{senderName || businessName || 'Sender Name'}</p>
                             {(senderTagline || businessTagline) && (
@@ -569,7 +694,7 @@ export function GenerateInvoiceModal({
                     <div className="grid grid-cols-2 gap-6 border-b border-gray-100 pb-6 mb-6">
                       <div className="text-left">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Billed To</p>
-                        <div className="border-l-2 border-slate-800 pl-3">
+                        <div className="border-l-3 pl-3" style={{ borderColor: brandColor }}>
                           <p className="text-sm font-bold text-slate-900">{customerName || 'Customer Name'}</p>
                           <p className="text-xs text-slate-500 mt-1">Client account / recipient</p>
                         </div>

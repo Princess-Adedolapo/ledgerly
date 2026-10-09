@@ -28,6 +28,7 @@ import { useUserPreferences } from '../lib/userPreferences';
 import { useWorkspace } from '../lib/workspace';
 import { SignatureModal } from '../components/invoices/SignatureModal';
 import { useToast } from '../contexts/ToastContext';
+import { DEFAULT_BRAND_COLOR, getContrastTextColor } from '../lib/branding';
 
 export default function ClientPortalPage() {
   const params = useParams<{ id?: string; docType?: string }>();
@@ -59,13 +60,16 @@ export default function ClientPortalPage() {
   const { addToast } = useToast();
   const documentRef = useRef<HTMLDivElement>(null);
 
-  // Load Sender profile from invoice metadata first, then localStorage / workspace defaults
+  // Load Sender profile and branding from invoice metadata first, then localStorage / workspace defaults
   const senderName = invoice?.sender_info?.name || localStorage.getItem('invoice_sender_name') || businessName || 'Ledgerly Workspace';
   const senderTagline = invoice?.sender_info?.tagline || localStorage.getItem('invoice_sender_tagline') || businessTagline || '';
   const senderAddress = invoice?.sender_info?.address || localStorage.getItem('invoice_sender_address') || '';
   const senderPhone = invoice?.sender_info?.phone || localStorage.getItem('invoice_sender_phone') || '';
   const senderEmail = invoice?.sender_info?.email || localStorage.getItem('invoice_sender_email') || '';
   const senderWebsite = invoice?.sender_info?.website || localStorage.getItem('invoice_sender_website') || '';
+  const senderLogo = invoice?.sender_info?.logo_url || localStorage.getItem('invoice_brand_logo') || '';
+  const brandColor = invoice?.sender_info?.brand_color || localStorage.getItem('invoice_brand_color') || DEFAULT_BRAND_COLOR;
+  const brandTextColor = getContrastTextColor(brandColor);
 
   useEffect(() => {
     if (invoice) {
@@ -265,12 +269,28 @@ export default function ClientPortalPage() {
         {/* Top Floating Control Bar (Hidden on Print) */}
         <div className="no-print bg-white/95 dark:bg-gray-900 border border-purple-100/60 dark:border-gray-800 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center font-bold text-lg">
-              {(senderName || 'L')[0].toUpperCase()}
-            </div>
+            {senderLogo ? (
+              <div className="h-10 w-10 rounded-xl bg-white border border-gray-200 dark:border-gray-700 p-1 flex items-center justify-center shrink-0 shadow-xs">
+                <img
+                  src={senderLogo}
+                  alt={senderName}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+            ) : (
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 shadow-xs"
+                style={{ backgroundColor: brandColor, color: brandTextColor }}
+              >
+                {(senderName || 'L')[0].toUpperCase()}
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-wider font-extrabold text-violet-600 dark:text-violet-400">
+                <span
+                  className="text-xs uppercase tracking-wider font-extrabold"
+                  style={{ color: brandColor }}
+                >
                   Client Portal
                 </span>
                 <span className="text-gray-300 dark:text-gray-700">•</span>
@@ -366,18 +386,31 @@ export default function ClientPortalPage() {
           ref={documentRef}
           className="print-card bg-white text-slate-900 rounded-2xl border border-gray-200 shadow-xl overflow-hidden"
         >
-          {/* Top Accent Bar */}
-          <div className="h-3.5 bg-slate-900" />
+          {/* Top Brand Accent Bar */}
+          <div className="h-3.5 w-full transition-colors" style={{ backgroundColor: brandColor }} />
 
           <div className="p-8 sm:p-12 space-y-8">
             {/* Header: Sender details + Document Type Title */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between pb-8 border-b border-slate-200 gap-6">
               {/* Sender Details */}
               <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-2xl tracking-wider">
-                    {(senderName || 'L')[0].toUpperCase()}
-                  </div>
+                <div className="flex items-center gap-4">
+                  {senderLogo ? (
+                    <div className="p-1.5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-center min-h-[3.5rem] min-w-[3.5rem] max-h-20 shrink-0">
+                      <img
+                        src={senderLogo}
+                        alt={senderName}
+                        className="max-h-16 max-w-[200px] object-contain rounded-lg"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl tracking-wider shadow-sm shrink-0"
+                      style={{ backgroundColor: brandColor, color: brandTextColor }}
+                    >
+                      {(senderName || 'L')[0].toUpperCase()}
+                    </div>
+                  )}
                   <div>
                     <h1 className="text-xl font-bold text-slate-900 leading-tight">
                       {senderName}
@@ -428,7 +461,14 @@ export default function ClientPortalPage() {
                   <p className="text-[11px] font-extrabold tracking-[0.25em] text-slate-400 uppercase">
                     {docTypeUpper}
                   </p>
-                  <p className="text-lg font-mono font-bold text-slate-900 mt-1 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200">
+                  <p
+                    className="text-lg font-mono font-bold mt-1 px-3 py-1 rounded-lg border inline-block"
+                    style={{
+                      borderColor: `${brandColor}33`,
+                      backgroundColor: `${brandColor}0d`,
+                      color: brandColor,
+                    }}
+                  >
                     #{invoice.invoice_number || invoice.id.slice(0, 8)}
                   </p>
                 </div>
@@ -467,7 +507,7 @@ export default function ClientPortalPage() {
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-2">
                   {isProposal ? 'PROPOSAL PREPARED FOR' : 'BILLED TO'}
                 </p>
-                <div className="border-l-3 border-slate-900 pl-4 py-1">
+                <div className="border-l-4 pl-4 py-1" style={{ borderColor: brandColor }}>
                   <p className="text-base font-bold text-slate-900">
                     {invoice.customer_name || 'Valued Client'}
                   </p>
@@ -510,17 +550,23 @@ export default function ClientPortalPage() {
             <div className="overflow-hidden rounded-xl border border-slate-200">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-slate-100/80 border-b border-slate-200">
-                    <th className="text-left text-[11px] font-bold text-slate-600 uppercase tracking-[0.15em] py-3 px-5">
+                  <tr
+                    className="border-b-2"
+                    style={{
+                      backgroundColor: '#f8fafc',
+                      borderBottomColor: brandColor,
+                    }}
+                  >
+                    <th className="text-left text-[11px] font-bold text-slate-700 uppercase tracking-[0.15em] py-3.5 px-5">
                       Description
                     </th>
-                    <th className="text-right text-[11px] font-bold text-slate-600 uppercase tracking-[0.15em] py-3 px-5 w-20">
+                    <th className="text-right text-[11px] font-bold text-slate-700 uppercase tracking-[0.15em] py-3.5 px-5 w-20">
                       Qty
                     </th>
-                    <th className="text-right text-[11px] font-bold text-slate-600 uppercase tracking-[0.15em] py-3 px-5 w-28">
+                    <th className="text-right text-[11px] font-bold text-slate-700 uppercase tracking-[0.15em] py-3.5 px-5 w-28">
                       Unit Price
                     </th>
-                    <th className="text-right text-[11px] font-bold text-slate-600 uppercase tracking-[0.15em] py-3 px-5 w-32">
+                    <th className="text-right text-[11px] font-bold text-slate-700 uppercase tracking-[0.15em] py-3.5 px-5 w-32">
                       Total
                     </th>
                   </tr>
@@ -589,8 +635,11 @@ export default function ClientPortalPage() {
                   </div>
                 )}
 
-                <div className="flex justify-between items-baseline pt-3 border-t border-slate-300">
-                  <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                <div
+                  className="flex justify-between items-baseline pt-3 border-t-2"
+                  style={{ borderTopColor: brandColor }}
+                >
+                  <span className="text-xs font-black uppercase tracking-wider" style={{ color: brandColor }}>
                     {invoice.status === 'paid' ? 'Total Paid' : `Total ${docTypeLabel} Amount`}
                   </span>
                   <span className="text-xl font-black text-slate-900 font-mono">

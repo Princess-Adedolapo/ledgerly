@@ -16,6 +16,8 @@ export interface LocalInvoiceMeta {
     phone?: string;
     address?: string;
     website?: string;
+    logo_url?: string;
+    brand_color?: string;
   };
   line_items?: Array<{
     id: string;

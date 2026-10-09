@@ -57,7 +57,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useActivityLog } from '../contexts/ActivityLogContext';
 import { useNotificationPreferences } from '../contexts/NotificationContext';
 import { useUserPreferences } from '../lib/userPreferences';
-import { formatCurrency } from '../lib/currency';
+import { formatCurrency, getCurrencySymbol } from '../lib/currency';
 import { ActivityTimeline } from '../components/workflow/ActivityTimeline';
 import { GenerateInvoiceModal, type InvoiceData } from '../components/invoices/GenerateInvoiceModal';
 import { EmailComposerModal } from '../components/email/EmailComposer';
@@ -105,20 +105,20 @@ const getCardDealValue = (card: WorkflowCard, contact: Contact | null, allInvoic
     }
   }
   const text = `${card.status_note || ''} ${card.title || ''}`;
-  const match = text.match(/[$₦€£]\s*([\d,]+)|([\d,]+)\s*(?:USD|NGN|EUR|GBP|m|k)/i);
+  const match = text.match(/[$₦€£]\s*([\d,]+(?:\.\d+)?)|([\d,]+(?:\.\d+)?)\s*(?:USD|NGN|EUR|GBP|m|k)/i);
   if (match) {
     const rawNum = parseFloat((match[1] || match[2]).replace(/,/g, ''));
     if (!isNaN(rawNum) && rawNum > 0) return rawNum;
   }
-  let hash = 0;
-  for (let i = 0; i < card.id.length; i++) hash = (hash << 5) - hash + card.id.charCodeAt(i);
-  const defaults = [6500000, 12500000, 4200000, 18400000, 9200000, 15000000, 8500000];
-  return defaults[Math.abs(hash) % defaults.length];
+  // Return 0 when no linked invoices or explicit deal amount exists.
+  // Never fabricate arbitrary mock values.
+  return 0;
 };
 
 type BoardFormState = {
   contact_id: string;
   status_note: string;
+  deal_value: string;
   due_date: string;
   priority: 'low' | 'medium' | 'high';
   assignee_name: string;
@@ -128,6 +128,7 @@ type BoardFormState = {
 const emptyForm = (colId: string): BoardFormState => ({
   contact_id: '',
   status_note: '',
+  deal_value: '',
   due_date: '',
   priority: 'medium',
   assignee_name: '',
@@ -429,12 +430,21 @@ export default function WorkflowBoard() {
         return;
       }
       const contact = contactById.get(contactId) ?? contacts.find((c) => c.id === contactId);
+
+      let finalNote = form.status_note.trim();
+      const rawVal = form.deal_value.trim().replace(/,/g, '');
+      if (rawVal && !isNaN(Number(rawVal)) && Number(rawVal) > 0) {
+        const sym = getCurrencySymbol(currencyCode, currencyDisplayMode).trim();
+        const formattedVal = `${sym} ${Number(rawVal).toLocaleString()}`;
+        finalNote = finalNote ? `${formattedVal} • ${finalNote}` : formattedVal;
+      }
+
       await createWorkflowCard({
         column_id: form.column_id,
         board_id: activeBoard?.id || null,
         contact_id: contactId,
         title: contact?.name ?? 'Client',
-        status_note: form.status_note,
+        status_note: finalNote || null,
         due_date: form.due_date || null,
         assignee_name: form.assignee_name,
         priority: form.priority,
@@ -777,7 +787,7 @@ export default function WorkflowBoard() {
                               Deal Value
                             </span>
                             <span className="text-xs sm:text-sm font-extrabold text-violet-700 dark:text-violet-400">
-                              {formatCurrency(cardValue, currencyCode, currencyDisplayMode)}
+                              {cardValue > 0 ? formatCurrency(cardValue, currencyCode, currencyDisplayMode) : '—'}
                             </span>
                           </div>
                           <div className="flex flex-col items-end gap-1">
@@ -924,15 +934,23 @@ export default function WorkflowBoard() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Due date</label>
-              <input
-                type="date"
-                value={form.due_date}
-                onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
+                Estimated Deal Value (optional)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-xs font-semibold text-gray-400 dark:text-slate-500 pointer-events-none">
+                  {getCurrencySymbol(currencyCode, currencyDisplayMode).trim()}
+                </span>
+                <input
+                  type="text"
+                  value={form.deal_value}
+                  onChange={(e) => setForm({ ...form, deal_value: e.target.value })}
+                  placeholder="e.g. 50,000 (leave empty if none)"
+                  className="w-full pl-8 pr-3 py-2 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Priority</label>
@@ -946,7 +964,20 @@ export default function WorkflowBoard() {
             </div>
           </div>
 
-          <Input label="Assignee" value={form.assignee_name} onChange={(v) => setForm({ ...form, assignee_name: v })} placeholder="Team member name" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Due date</label>
+              <input
+                type="date"
+                value={form.due_date}
+                onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-[#192237] border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
+              />
+            </div>
+            <div>
+              <Input label="Assignee" value={form.assignee_name} onChange={(v) => setForm({ ...form, assignee_name: v })} placeholder="Team member name" />
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">Column</label>
@@ -1086,7 +1117,16 @@ export default function WorkflowBoard() {
             </div>
 
             {/* Card meta */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div className="bg-gray-50 dark:bg-[#111625] border border-transparent dark:border-slate-800/60 rounded-lg p-2.5">
+                <p className="text-gray-400 dark:text-slate-500">Deal Value</p>
+                <p className="mt-0.5 text-gray-800 dark:text-slate-200 font-bold">
+                  {(() => {
+                    const v = getCardDealValue(detailCard, detailContact, detailInvoices);
+                    return v > 0 ? formatCurrency(v, currencyCode, currencyDisplayMode) : '—';
+                  })()}
+                </p>
+              </div>
               <div className="bg-gray-50 dark:bg-[#111625] border border-transparent dark:border-slate-800/60 rounded-lg p-2.5">
                 <p className="text-gray-400 dark:text-slate-500">Priority</p>
                 <p className="mt-0.5"><span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${priorityStyles[detailCard.priority].badge}`}>{priorityStyles[detailCard.priority].label}</span></p>
@@ -1099,7 +1139,7 @@ export default function WorkflowBoard() {
                 <p className="text-gray-400 dark:text-slate-500">Assignee</p>
                 <p className="mt-0.5 text-gray-800 dark:text-slate-200">{detailCard.assignee_name || '—'}</p>
               </div>
-              <div className="bg-gray-50 dark:bg-[#111625] border border-transparent dark:border-slate-800/60 rounded-lg p-2.5">
+              <div className="bg-gray-50 dark:bg-[#111625] border border-transparent dark:border-slate-800/60 rounded-lg p-2.5 col-span-2">
                 <p className="text-gray-400 dark:text-slate-500">Status note</p>
                 <p className="mt-0.5 text-gray-800 dark:text-slate-200">{detailCard.status_note || '—'}</p>
               </div>

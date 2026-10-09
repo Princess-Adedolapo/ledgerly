@@ -127,13 +127,15 @@ export default function Invoices() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    const senderObj = data.senderInfo || {
-      name: localStorage.getItem('invoice_sender_name') || 'Ledgerly Workspace',
-      tagline: localStorage.getItem('invoice_sender_tagline') || '',
-      address: localStorage.getItem('invoice_sender_address') || '',
-      phone: localStorage.getItem('invoice_sender_phone') || '',
-      email: localStorage.getItem('invoice_sender_email') || '',
-      website: localStorage.getItem('invoice_sender_website') || '',
+    const senderObj = {
+      name: data.senderInfo?.name || localStorage.getItem('invoice_sender_name') || 'Ledgerly Workspace',
+      tagline: data.senderInfo?.tagline || localStorage.getItem('invoice_sender_tagline') || '',
+      address: data.senderInfo?.address || localStorage.getItem('invoice_sender_address') || '',
+      phone: data.senderInfo?.phone || localStorage.getItem('invoice_sender_phone') || '',
+      email: data.senderInfo?.email || localStorage.getItem('invoice_sender_email') || '',
+      website: data.senderInfo?.website || localStorage.getItem('invoice_sender_website') || '',
+      logo_url: data.senderInfo?.logo_url || localStorage.getItem('invoice_brand_logo') || '',
+      brand_color: data.senderInfo?.brand_color || localStorage.getItem('invoice_brand_color') || '#1e293b',
     };
 
     const metaObj = {
