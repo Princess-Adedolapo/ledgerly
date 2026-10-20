@@ -95,6 +95,7 @@ export function EditInvoiceModal({
 
   if (!open || !invoice) return null;
 
+  const currencySymbol = invoiceCurrency === 'NGN' ? '₦' : invoiceCurrency === 'EUR' ? '€' : invoiceCurrency === 'GBP' ? '£' : '$';
   const numAmount = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
   const numTax = typeof taxRate === 'number' ? taxRate : parseFloat(taxRate) || 0;
   const numDiscount = typeof discount === 'number' ? discount : parseFloat(discount) || 0;
@@ -161,7 +162,7 @@ export function EditInvoiceModal({
                 type="number"
                 value={amount}
                 min={0}
-                step="0.01"
+                step="1"
                 onChange={(e) => setAmount(e.target.value)}
                 onFocus={(e) => e.target.select()}
                 className={inputBase}
@@ -192,7 +193,7 @@ export function EditInvoiceModal({
                 type="number"
                 value={taxRate}
                 min={0}
-                step="0.1"
+                step="1"
                 onChange={(e) => setTaxRate(e.target.value)}
                 onFocus={(e) => e.target.select()}
                 className={inputBase}
@@ -200,17 +201,23 @@ export function EditInvoiceModal({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                <span className="inline-flex items-center gap-1.5"><Gift className="w-3.5 h-3.5" /> Discount</span>
+                <span className="inline-flex items-center gap-1.5"><Gift className="w-3.5 h-3.5 text-emerald-500" /> Incentive / Discount ({currencySymbol})</span>
               </label>
-              <input
-                type="number"
-                value={discount}
-                min={0}
-                step="0.01"
-                onChange={(e) => setDiscount(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                className={inputBase}
-              />
+              <div className="relative flex items-center">
+                <span className="absolute left-3 text-sm text-gray-400 select-none font-bold pointer-events-none">
+                  {currencySymbol}
+                </span>
+                <input
+                  type="number"
+                  value={discount}
+                  min={0}
+                  step="1"
+                  onChange={(e) => setDiscount(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  placeholder="0"
+                  className={`${inputBase} pl-7 font-mono font-medium`}
+                />
+              </div>
             </div>
           </div>
 

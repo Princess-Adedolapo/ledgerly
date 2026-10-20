@@ -117,8 +117,8 @@ export default function Invoices() {
       currency_code: data.currencyCode,
       document_type: data.documentType || 'invoice',
       due_date: data.dueDate || null,
-      notes: data.notes || null,
       tax_rate: data.taxRate || 0,
+      discount: data.discount || 0,
       discount_rate: data.discount || 0,
       line_items: data.lineItems || [],
     });
@@ -163,7 +163,7 @@ export default function Invoices() {
     const { data: inserted, error } = await supabase.from('invoices').insert({
       ...basePayload,
       tax_rate: validated.tax_rate,
-      discount: validated.discount_rate,
+      discount: validated.discount ?? validated.discount_rate ?? 0,
     }).select('*').single();
 
     let createdId = inserted?.id;

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Plus, Trash2, Download, Percent, Gift, Building2, Mail, Phone, Globe, MapPin, Palette, Upload } from 'lucide-react';
+import { X, Plus, Trash2, Download, Percent, Gift, Building2, Mail, Phone, Globe, MapPin, Palette, Upload, AlertCircle } from 'lucide-react';
 import type { Contact } from '../../lib/supabase';
 import SearchableContactSelect from '../contacts/SearchableContactSelect';
 import { Button } from '../ui';
@@ -8,6 +8,7 @@ import { useUserPreferences } from '../../lib/userPreferences';
 import { formatCurrency } from '../../lib/currency';
 import { getErrorMessage } from '../../lib/errorUtils';
 import { DEFAULT_BRAND_COLOR, getBrandSettings, saveBrandSettings, processLogoImageFile, getContrastTextColor, BRAND_COLOR_PRESETS } from '../../lib/branding';
+import { exportElementToPdf } from '../../lib/pdfExport';
 
 export interface LineItem {
   id: string;
@@ -95,6 +96,7 @@ export function GenerateInvoiceModal({
   }, [open, currencyCode, businessName, businessTagline, initialCustomerName]);
 
   const fmt = (v: number) => formatCurrency(v, invoiceCurrency, currencyDisplayMode, 2);
+  const currencySymbol = invoiceCurrency === 'NGN' ? '₦' : invoiceCurrency === 'EUR' ? '€' : invoiceCurrency === 'GBP' ? '£' : '$';
   const [documentType, setDocumentType] = useState<'invoice' | 'proposal' | 'quote'>('invoice');
   const [invoiceNumber] = useState(generateInvoiceNumber());
   const [customerName, setCustomerName] = useState('');
@@ -119,8 +121,14 @@ export function GenerateInvoiceModal({
 
   if (!open) return null;
 
-  const getItemQty = (li: RawLineItem) => (typeof li.quantity === 'number' ? li.quantity : parseFloat(li.quantity as string) || 0);
-  const getItemPrice = (li: RawLineItem) => (typeof li.unitPrice === 'number' ? li.unitPrice : parseFloat(li.unitPrice as string) || 0);
+  const getItemQty = (li: RawLineItem) => {
+    const q = typeof li.quantity === 'number' ? li.quantity : parseFloat(li.quantity as string);
+    return Number.isFinite(q) && q > 0 ? q : 1;
+  };
+  const getItemPrice = (li: RawLineItem) => {
+    const p = typeof li.unitPrice === 'number' ? li.unitPrice : parseFloat(li.unitPrice as string);
+    return Number.isFinite(p) && p >= 0 ? p : 0;
+  };
 
   const subtotal = lineItems.reduce((sum, li) => sum + getItemQty(li) * getItemPrice(li), 0);
   const numTaxRate = typeof taxRate === 'number' ? taxRate : parseFloat(taxRate as string) || 0;
@@ -154,6 +162,10 @@ export function GenerateInvoiceModal({
     }
     if (lineItems.length === 0 || lineItems.every((li) => !li.description.trim())) {
       setError('At least one line item with a description is required');
+      return;
+    }
+    if (numDiscount > subtotal && subtotal > 0) {
+      setError(`Discount (${fmt(numDiscount)}) cannot exceed the subtotal amount (${fmt(subtotal)}).`);
       return;
     }
     setSaving(true);
@@ -208,21 +220,11 @@ export function GenerateInvoiceModal({
     if (!previewRef.current) return;
     setDownloading(true);
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-
-      const canvas = await html2canvas(previewRef.current, {
-        scale: 2,
+      await exportElementToPdf(previewRef.current, `${documentType}_${invoiceNumber}.pdf`, {
+        scale: 1.5,
+        quality: 0.85,
         backgroundColor: '#ffffff',
-        useCORS: true,
-        logging: false,
       });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${documentType}_${invoiceNumber}.pdf`);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to generate PDF document.'));
     } finally {
@@ -497,40 +499,86 @@ export function GenerateInvoiceModal({
 
               {/* Line items */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Line Items</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    Line Items
+                  </label>
+                  <span className="text-xs text-gray-400 font-medium">
+                    {lineItems.length} {lineItems.length === 1 ? 'item' : 'items'}
+                  </span>
+                </div>
+
+                {/* Column Header Tags */}
+                <div className="flex items-center gap-2 px-1 mb-1.5 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <div className="flex-1 min-w-0">Item Description</div>
+                  <div className="w-20 text-center">
+                    <span className="inline-block bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded border border-violet-200/60 dark:border-violet-800/50 text-[10px] font-bold">
+                      Qty
+                    </span>
+                  </div>
+                  <div className="w-28 text-right">
+                    <span className="inline-block bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded border border-violet-200/60 dark:border-violet-800/50 text-[10px] font-bold">
+                      Price ({currencySymbol})
+                    </span>
+                  </div>
+                  <div className="w-8 shrink-0" />
+                </div>
+
                 <div className="space-y-2">
-                  {lineItems.map((li) => (
-                    <div key={li.id} className="flex items-start gap-2">
-                      <input
-                        type="text"
-                        value={li.description}
-                        onChange={(e) => updateLineItem(li.id, 'description', e.target.value)}
-                        placeholder="Description"
-                        className="flex-1 min-w-0 px-2.5 py-2 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
-                      />
-                      <input
-                        type="number"
-                        value={li.quantity}
-                        min={1}
-                        onChange={(e) => updateLineItem(li.id, 'quantity', e.target.value)}
-                        onFocus={(e) => e.target.select()}
-                        placeholder="Qty"
-                        className="w-16 px-2 py-2 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-violet-500/50"
-                      />
-                      <input
-                        type="number"
-                        value={li.unitPrice}
-                        min={0}
-                        step="0.01"
-                        onChange={(e) => updateLineItem(li.id, 'unitPrice', e.target.value)}
-                        onFocus={(e) => e.target.select()}
-                        placeholder="Price"
-                        className="w-20 px-2 py-2 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-violet-500/50"
-                      />
+                  {lineItems.map((li, index) => (
+                    <div key={li.id} className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0 relative">
+                        <input
+                          type="text"
+                          value={li.description}
+                          onChange={(e) => updateLineItem(li.id, 'description', e.target.value)}
+                          placeholder={`Item #${index + 1} description`}
+                          aria-label={`Item #${index + 1} description`}
+                          className="w-full px-2.5 py-2 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                        />
+                      </div>
+                      <div className="w-20 relative">
+                        <input
+                          type="number"
+                          value={li.quantity}
+                          min={1}
+                          step="1"
+                          onChange={(e) => updateLineItem(li.id, 'quantity', e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          placeholder="Qty"
+                          aria-label={`Item #${index + 1} quantity`}
+                          className="w-full px-2 py-2 text-center text-sm font-semibold bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                        />
+                      </div>
+                      <div className="w-28 relative">
+                        <div className="relative flex items-center">
+                          <span className="absolute left-2.5 text-xs text-gray-400 select-none font-bold pointer-events-none">
+                            {currencySymbol}
+                          </span>
+                          <input
+                            type="number"
+                            value={li.unitPrice}
+                            min={0}
+                            step="1"
+                            onChange={(e) => updateLineItem(li.id, 'unitPrice', e.target.value)}
+                            onFocus={(e) => e.target.select()}
+                            placeholder="0"
+                            aria-label={`Item #${index + 1} unit price in ${invoiceCurrency}`}
+                            className="w-full pl-6 pr-2 py-2 text-right text-sm font-mono font-medium bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                          />
+                        </div>
+                      </div>
                       <button
+                        type="button"
                         onClick={() => removeLineItem(li.id)}
-                        aria-label="Remove line item"
-                        className="p-2 text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                        disabled={lineItems.length === 1}
+                        aria-label={`Remove item #${index + 1}`}
+                        title={lineItems.length === 1 ? 'At least one line item is required' : 'Remove item'}
+                        className={`p-2 transition-colors shrink-0 rounded-lg ${
+                          lineItems.length === 1
+                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                            : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
+                        }`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -538,24 +586,26 @@ export function GenerateInvoiceModal({
                   ))}
                 </div>
                 <button
+                  type="button"
                   onClick={addLineItem}
-                  className="mt-2 flex items-center gap-1.5 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-500 transition-colors"
+                  className="mt-2.5 inline-flex items-center gap-1.5 text-sm font-medium text-violet-600 dark:text-violet-400 hover:text-violet-500 transition-colors"
                 >
                   <Plus className="w-4 h-4" /> Add Line Item
                 </button>
               </div>
 
               {/* Tax + Discount */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    <span className="inline-flex items-center gap-1.5"><Percent className="w-3.5 h-3.5" /> Tax Rate (%)</span>
+                    <span className="inline-flex items-center gap-1.5"><Percent className="w-3.5 h-3.5 text-violet-500" /> Tax Rate (%)</span>
                   </label>
                   <input
                     type="number"
                     value={taxRate}
                     min={0}
-                    step="0.1"
+                    max={100}
+                    step="1"
                     onChange={(e) => setTaxRate(e.target.value)}
                     onFocus={(e) => e.target.select()}
                     placeholder="10"
@@ -564,18 +614,35 @@ export function GenerateInvoiceModal({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    <span className="inline-flex items-center gap-1.5"><Gift className="w-3.5 h-3.5" /> Incentive / Discount</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Gift className="w-3.5 h-3.5 text-emerald-500" /> Incentive / Discount ({currencySymbol})
+                    </span>
                   </label>
-                  <input
-                    type="number"
-                    value={discount}
-                    min={0}
-                    step="0.01"
-                    onChange={(e) => setDiscount(e.target.value)}
-                    onFocus={(e) => e.target.select()}
-                    placeholder="0"
-                    className={inputBase}
-                  />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-sm text-gray-400 select-none font-bold pointer-events-none">
+                      {currencySymbol}
+                    </span>
+                    <input
+                      type="number"
+                      value={discount}
+                      min={0}
+                      step="1"
+                      onChange={(e) => {
+                        setDiscount(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      onFocus={(e) => e.target.select()}
+                      placeholder="0"
+                      className={`${inputBase} pl-7 font-mono font-medium`}
+                    />
+                  </div>
+                  {numDiscount > 0 && (
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 font-medium">
+                      {numDiscount > subtotal && subtotal > 0
+                        ? `Capped at subtotal: − ${fmt(safeDiscount)}`
+                        : `Deducts − ${fmt(safeDiscount)} from subtotal`}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -794,7 +861,12 @@ export function GenerateInvoiceModal({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 shrink-0">
-          {error && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>}
+          {error && (
+            <div className="mb-3.5 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl flex items-start gap-2.5 text-xs sm:text-sm text-red-700 dark:text-red-300 animate-in fade-in duration-200">
+              <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+              <div className="flex-1 font-medium leading-relaxed">{error}</div>
+            </div>
+          )}
           <div className="flex gap-3">
             <Button onClick={handleSave} disabled={saving}>
               {saving ? 'Saving...' : `Save ${documentType === 'proposal' ? 'Proposal' : documentType === 'quote' ? 'Quote' : 'Invoice'}`}

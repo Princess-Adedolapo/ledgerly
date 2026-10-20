@@ -8,6 +8,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { useUserPreferences } from '../../lib/userPreferences';
 import { formatCurrency } from '../../lib/currency';
 import { logCardActivity } from '../../services/activityService';
+import { generatePdfBlobFromElement } from '../../lib/pdfExport';
 
 type TemplateKey = 'welcome' | 'payment' | 'support' | 'thankyou';
 
@@ -337,15 +338,11 @@ export default function EmailComposer({
     try {
       const { data: userData, error: userErr } = await supabase.auth.getUser();
       if (userErr || !userData.user) throw userErr ?? new Error('Not authenticated');
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-      const canvas = await html2canvas(invoicePreviewRef.current, { scale: 2, backgroundColor: '#ffffff', logging: false });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      const blob = pdf.output('blob');
+      const blob = await generatePdfBlobFromElement(invoicePreviewRef.current, {
+        scale: 1.5,
+        quality: 0.85,
+        backgroundColor: '#ffffff',
+      });
       const fileName = `${selectedInvoice.invoice_number ?? selectedInvoice.id}.pdf`;
       // Scope path by user_id so storage RLS can enforce per-user ownership.
       const path = `${userData.user.id}/${selectedInvoice.id}/${fileName}`;

@@ -126,9 +126,9 @@ export const InvoiceInputSchema = z.object({
   status: z.enum(['pending', 'paid', 'overdue', 'approved']).default('pending'),
   document_type: z.enum(['invoice', 'proposal', 'quote']).default('invoice'),
   due_date: z.string().nullable().optional(),
-  notes: sanitizedOptionalString(5000),
   tax_rate: z.number().min(0).max(100).default(0),
-  discount_rate: z.number().min(0).max(100).default(0),
+  discount: nonNegativeAmountSchema.optional().default(0),
+  discount_rate: z.number().min(0).optional().default(0),
   line_items: z.array(LineItemSchema).optional(),
 }).strict();
 

@@ -44,7 +44,7 @@ function SidebarContent({
       {/* Logo + workspace switcher (CSS Selector 2 target) */}
       <div
         id="sidebar-header"
-        className={`flex items-center h-16 border-b border-gray-200/80 dark:border-[#2A2A36] transition-all duration-300 ease-in-out ${
+        className={`flex items-center h-16 shrink-0 border-b border-gray-200/80 dark:border-[#2A2A36] transition-all duration-300 ease-in-out ${
           isCollapsed ? 'justify-center px-2' : 'gap-2.5 px-3.5'
         }`}
       >
@@ -129,7 +129,7 @@ function SidebarContent({
 
       {/* Footer */}
       <div
-        className={`border-t border-gray-200/80 dark:border-[#2A2A36] transition-all duration-200 overflow-x-hidden ${
+        className={`shrink-0 border-t border-gray-200/80 dark:border-[#2A2A36] transition-all duration-200 overflow-x-hidden ${
           isCollapsed ? 'px-2 py-3' : 'px-3 py-4'
         }`}
       >
@@ -281,15 +281,15 @@ export default function AppLayout() {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    navigate('/signin', { replace: true });
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF] dark:bg-[#0F0F12] flex transition-colors duration-200">
-      {/* Desktop & tablet sidebar (CSS Selector 1 & 2 parent) */}
+    <div className="flex h-screen h-[100dvh] w-screen max-w-full overflow-hidden bg-[#F8F7FF] dark:bg-[#0F0F12] transition-colors duration-200">
+      {/* Desktop & tablet sidebar (stays fixed at full screen height, never scrolls with page) */}
       <aside
         id="app-sidebar"
-        className={`hidden md:flex flex-col bg-white/95 dark:bg-[#18181F] backdrop-blur-xl border-r border-purple-100/60 dark:border-[#2A2A36] shrink-0 transition-[width] duration-300 ease-in-out select-none overflow-hidden ${
+        className={`hidden md:flex flex-col h-full bg-white/95 dark:bg-[#18181F] backdrop-blur-xl border-r border-purple-100/60 dark:border-[#2A2A36] shrink-0 transition-[width] duration-300 ease-in-out select-none overflow-hidden ${
           isCollapsed ? 'w-[72px]' : 'w-64'
         }`}
       >
@@ -302,31 +302,48 @@ export default function AppLayout() {
         />
       </aside>
 
-      {/* Mobile top navigation header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white/95 dark:bg-[#18181F]/90 backdrop-blur-xl border-b border-purple-100/60 dark:border-[#2A2A36] flex items-center justify-between px-4">
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="flex items-center gap-2.5 group cursor-pointer focus:outline-none"
-          aria-label="Open menu and navigation"
-          title="Open menu"
-        >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C5CFC] to-indigo-500 flex items-center justify-center shadow-sm group-hover:scale-105 active:scale-95 transition-transform">
-            <LayoutDashboard className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-base font-bold text-gray-900 dark:text-white truncate max-w-[180px]">
-            {businessName}
-          </span>
-        </button>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
+      {/* Main content column: In-flow mobile header + scrollable content container */}
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+        {/* Mobile top navigation header (only rendered on mobile, in-flow shrink-0) */}
+        <header className="md:hidden h-14 shrink-0 bg-white/95 dark:bg-[#18181F]/90 backdrop-blur-xl border-b border-purple-100/60 dark:border-[#2A2A36] flex items-center justify-between px-4 z-30">
           <button
             onClick={() => setMobileOpen(true)}
-            aria-label="Open menu"
-            className="p-1.5 text-gray-500 dark:text-[#9CA3AF] hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-[#1E1E26] transition-colors"
+            className="flex items-center gap-2.5 group cursor-pointer focus:outline-none"
+            aria-label="Open menu and navigation"
+            title="Open menu"
           >
-            <Menu className="w-6 h-6" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C5CFC] to-indigo-500 flex items-center justify-center shadow-sm group-hover:scale-105 active:scale-95 transition-transform">
+              <LayoutDashboard className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-base font-bold text-gray-900 dark:text-white truncate max-w-[180px]">
+              {businessName}
+            </span>
           </button>
-        </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+              className="p-1.5 text-gray-500 dark:text-[#9CA3AF] hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-[#1E1E26] transition-colors"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
+        </header>
+
+        {/* Main scrollable area - ONLY this scrolls, with proper bottom padding to prevent clipping */}
+        <main
+          id="main-content-scroll-container"
+          className="flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden focus:outline-none"
+          style={{
+            paddingBottom: 'max(6rem, calc(4.5rem + env(safe-area-inset-bottom, 0px)))',
+          }}
+        >
+          <Outlet />
+        </main>
+
+        {/* Subtle Floating Action Button (FAB) in bottom-right corner */}
+        <HelpTriggerButton onClick={() => setHelpModalOpen(true)} />
       </div>
 
       {/* Mobile slide-over drawer */}
@@ -336,7 +353,7 @@ export default function AppLayout() {
             className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative w-72 max-w-[85vw] bg-white dark:bg-[#18181F] border-r border-gray-200 dark:border-[#2A2A36] flex flex-col shadow-2xl">
+          <aside className="relative w-72 max-w-[85vw] h-full bg-white dark:bg-[#18181F] border-r border-gray-200 dark:border-[#2A2A36] flex flex-col shadow-2xl">
             <SidebarContent
               isMobile
               onNavigate={() => setMobileOpen(false)}
@@ -351,14 +368,6 @@ export default function AppLayout() {
           </aside>
         </div>
       )}
-
-      {/* Main content - seamlessly expands wider when sidebar closes */}
-      <main className="flex-1 min-w-0 pt-14 md:pt-0 transition-all duration-300 ease-in-out">
-        <Outlet />
-      </main>
-
-      {/* Subtle Floating Action Button (FAB) in bottom-right corner visible across all dashboard views */}
-      <HelpTriggerButton onClick={() => setHelpModalOpen(true)} />
 
       {/* Help & Report Problem Modal */}
       <HelpReportModal

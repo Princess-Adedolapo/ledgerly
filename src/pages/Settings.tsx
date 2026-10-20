@@ -113,7 +113,7 @@ export default function Settings() {
       return;
     }
     await supabase.auth.signOut();
-    navigate('/auth');
+    navigate('/signin', { replace: true });
   };
 
   useEffect(() => {
@@ -173,7 +173,7 @@ export default function Settings() {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    navigate('/signin', { replace: true });
   };
 
   const [tab, setTab] = useState<'general' | 'team'>('general');

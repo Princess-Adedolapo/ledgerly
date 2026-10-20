@@ -20,7 +20,72 @@ export function getErrorMessage(
 
   if (!rawMessage) return fallbackMessage;
 
-  // Mask database / PostgreSQL / Supabase structural errors
+  // Intercept Zod schema validation errors (either as a ZodError object or JSON string)
+  if (typeof error === 'object' && error !== null && 'issues' in error && Array.isArray((error as { issues: unknown[] }).issues)) {
+    const issues = (error as { issues: Array<{ path?: (string | number)[]; code?: string; message?: string; maximum?: number; minimum?: number }> }).issues;
+    if (issues.length > 0) {
+      const first = issues[0];
+      const fieldPath = Array.isArray(first.path) ? first.path.join('.') : '';
+      const fieldLabel =
+        fieldPath === 'discount_rate' || fieldPath === 'discount'
+          ? 'Incentive / Discount'
+          : fieldPath === 'tax_rate'
+          ? 'Tax rate'
+          : fieldPath === 'amount'
+          ? 'Total amount'
+          : fieldPath === 'customer_name'
+          ? 'Customer name'
+          : fieldPath ? fieldPath.replace(/_/g, ' ') : '';
+
+      if (first.code === 'too_big' && typeof first.maximum === 'number') {
+        return `${fieldLabel || 'Value'} cannot exceed ${first.maximum}.`;
+      }
+      if (first.code === 'too_small' && typeof first.minimum === 'number') {
+        return `${fieldLabel || 'Value'} must be at least ${first.minimum}.`;
+      }
+      if (first.message && first.message !== 'Invalid input') {
+        return first.message;
+      }
+      if (fieldLabel) {
+        return `Please provide a valid value for ${fieldLabel}.`;
+      }
+    }
+  }
+
+  if (rawMessage.startsWith('[') && rawMessage.includes('"code"')) {
+    try {
+      const parsedIssues = JSON.parse(rawMessage);
+      if (Array.isArray(parsedIssues) && parsedIssues.length > 0) {
+        const first = parsedIssues[0];
+        const fieldPath = Array.isArray(first.path) ? first.path.join('.') : '';
+        const fieldLabel =
+          fieldPath === 'discount_rate' || fieldPath === 'discount'
+            ? 'Incentive / Discount'
+            : fieldPath === 'tax_rate'
+            ? 'Tax rate'
+            : fieldPath === 'amount'
+            ? 'Total amount'
+            : fieldPath === 'customer_name'
+            ? 'Customer name'
+            : fieldPath ? fieldPath.replace(/_/g, ' ') : '';
+
+        if (first.code === 'too_big' && typeof first.maximum === 'number') {
+          return `${fieldLabel || 'Value'} cannot exceed ${first.maximum}.`;
+        }
+        if (first.code === 'too_small' && typeof first.minimum === 'number') {
+          return `${fieldLabel || 'Value'} must be at least ${first.minimum}.`;
+        }
+        if (first.message && first.message !== 'Invalid input') {
+          return first.message;
+        }
+        if (fieldLabel) {
+          return `Please provide a valid value for ${fieldLabel}.`;
+        }
+      }
+    } catch {
+      // Fall through if not valid JSON
+    }
+  }
   const isInternalDbError =
     /PGRST|PostgREST|row-level security|foreign key constraint|duplicate key value|unique constraint|relation ".*" does not exist|column ".*" of relation|syntax error at or near/i.test(
       rawMessage

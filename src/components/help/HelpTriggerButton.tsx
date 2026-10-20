@@ -11,6 +11,10 @@ export function HelpTriggerButton({ onClick, className = '' }: HelpTriggerButton
     <div
       id="dashboard-help-fab-container"
       className={`fixed bottom-5 right-5 z-40 select-none ${className}`}
+      style={{
+        bottom: 'max(1.25rem, calc(1.25rem + env(safe-area-inset-bottom, 0px)))',
+        right: 'max(1.25rem, calc(1.25rem + env(safe-area-inset-right, 0px)))',
+      }}
     >
       <button
         id="dashboard-help-fab-btn"

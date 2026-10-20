@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './lib/auth';
+import { supabase } from './lib/supabase';
 import { WorkspaceProvider } from './lib/workspace';
 import { UserPreferencesProvider } from './lib/userPreferences';
 import { ToastProvider } from './contexts/ToastContext';
@@ -26,6 +28,22 @@ import { LayoutDashboard } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
+
+  // If user navigates back using browser Back button and page is served from bfcache, verify session
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+          if (!currentSession) {
+            window.location.replace('/');
+          }
+        });
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
@@ -38,7 +56,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  if (!session) return <Navigate to="/auth" replace />;
+
+  // Redirect to landing page (/) immediately if unauthenticated
+  if (!session) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -71,6 +91,22 @@ function AppRoutes() {
       <Route path="/share" element={<ClientPortalPage />} />
       <Route
         path="/auth"
+        element={
+          <PublicRoute>
+            <AuthPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/signin"
+        element={
+          <PublicRoute>
+            <AuthPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/login"
         element={
           <PublicRoute>
             <AuthPage />

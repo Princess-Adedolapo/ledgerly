@@ -29,6 +29,7 @@ import { useWorkspace } from '../lib/workspace';
 import { SignatureModal } from '../components/invoices/SignatureModal';
 import { useToast } from '../contexts/ToastContext';
 import { DEFAULT_BRAND_COLOR, getContrastTextColor } from '../lib/branding';
+import { exportElementToPdf } from '../lib/pdfExport';
 
 export default function ClientPortalPage() {
   const params = useParams<{ id?: string; docType?: string }>();
@@ -118,21 +119,15 @@ export default function ClientPortalPage() {
     if (!documentRef.current) return;
     setDownloading(true);
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-
-      const canvas = await html2canvas(documentRef.current, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${docType}_${invoice?.invoice_number || 'document'}.pdf`);
+      await exportElementToPdf(
+        documentRef.current,
+        `${docType}_${invoice?.invoice_number || 'document'}.pdf`,
+        {
+          scale: 1.5,
+          quality: 0.85,
+          backgroundColor: '#ffffff',
+        }
+      );
     } catch (err) {
       console.error('Failed to generate PDF:', err);
       addToast('error', 'PDF Export Error', 'Could not generate PDF download.');
