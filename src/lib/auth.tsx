@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { setActiveWorkspaceId } from './activeWorkspace';
+import { getErrorMessage } from './errorUtils';
 
 type AuthContextType = {
   session: Session | null;
@@ -194,44 +195,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithMagicLink = async (email: string) => {
+    const magicLinkFallback =
+      "Unable to send magic link. Please verify your email, wait a moment, or try 'Forgot password' to reset your credentials.";
     try {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://flowledgerly.ai.studio';
+      const trimmedEmail = email.trim();
       const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
+        email: trimmedEmail,
         options: {
           emailRedirectTo: baseUrl,
         },
       });
       if (error) {
         console.error('[auth signInWithMagicLink] Error:', error);
-        return { error: error.message || 'Failed to send magic link email.' };
+        return {
+          error: getErrorMessage(error, magicLinkFallback),
+        };
       }
       return { error: null };
     } catch (err: unknown) {
       console.error('[auth signInWithMagicLink] Exception:', err);
-      const isErrorObj = err instanceof Error;
-      const msg = isErrorObj ? err.message : String(err);
-      return { error: msg || 'An unexpected error occurred while sending magic link.' };
+      return {
+        error: getErrorMessage(err, magicLinkFallback),
+      };
     }
   };
 
   const resetPassword = async (email: string) => {
+    const resetFallback =
+      'Unable to send password reset email. Please verify your email address and try again in a few moments.';
     try {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://flowledgerly.ai.studio';
       const redirectUrl = `${baseUrl}/reset-password`;
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      const trimmedEmail = email.trim();
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
         redirectTo: redirectUrl,
       });
       if (error) {
         console.error('[auth resetPassword] Error:', error);
-        return { error: error.message || 'Failed to send password reset email.' };
+        return {
+          error: getErrorMessage(error, resetFallback),
+        };
       }
       return { error: null };
     } catch (err: unknown) {
       console.error('[auth resetPassword] Exception:', err);
-      const isErrorObj = err instanceof Error;
-      const msg = isErrorObj ? err.message : String(err);
-      return { error: msg || 'An unexpected error occurred while requesting password reset.' };
+      return {
+        error: getErrorMessage(err, resetFallback),
+      };
     }
   };
 

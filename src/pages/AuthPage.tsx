@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { getErrorMessage } from '../lib/errorUtils';
 import {
   Mail,
   Lock,
@@ -182,7 +183,12 @@ export default function AuthPage() {
         const { error: err } = await signInWithMagicLink(email.trim());
         setLoading(false);
         if (err) {
-          setError(err);
+          setError(
+            getErrorMessage(
+              err,
+              "Unable to send magic link. Please verify your email, wait a moment, or try 'Forgot password' to reset your credentials."
+            )
+          );
           return;
         }
         setSuccessState('magic_link_sent');
@@ -190,16 +196,26 @@ export default function AuthPage() {
         const { error: err } = await resetPassword(email.trim());
         setLoading(false);
         if (err) {
-          setError(err);
+          setError(
+            getErrorMessage(
+              err,
+              'Unable to send password reset email. Please verify your email address and try again in a few moments.'
+            )
+          );
           return;
         }
         setSuccessState('reset_sent');
       }
     } catch (err: unknown) {
       setLoading(false);
-      const isErrorObj = err instanceof Error;
-      const errMsg = isErrorObj ? err.message : String(err) || 'An unexpected error occurred';
-      setError(errMsg === '{}' ? 'An unexpected exception occurred during authentication.' : errMsg);
+      setError(
+        getErrorMessage(
+          err,
+          mode === 'magic_link'
+            ? "Unable to send magic link. Please verify your email, wait a moment, or try 'Forgot password' to reset your credentials."
+            : 'An unexpected exception occurred during authentication.'
+        )
+      );
     }
   };
 
@@ -599,6 +615,18 @@ export default function AuthPage() {
                           'Sign Up'
                         </button>
                         <span> if you don't have an account yet.</span>
+                      </div>
+                    ) : error.includes("'Forgot password'") ? (
+                      <div>
+                        <span>{error.split("'Forgot password'")[0]}</span>
+                        <button
+                          type="button"
+                          onClick={() => switchMode('forgot')}
+                          className="font-semibold underline hover:text-red-900 focus:outline-none cursor-pointer"
+                        >
+                          'Forgot password'
+                        </button>
+                        <span>{error.split("'Forgot password'")[1] || ''}</span>
                       </div>
                     ) : (
                       error

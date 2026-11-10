@@ -20,6 +20,32 @@ export function getErrorMessage(
 
   if (!rawMessage) return fallbackMessage;
 
+  const trimmed = rawMessage.trim();
+  // Intercept empty serialized objects or stringified JS object placeholders
+  if (
+    !trimmed ||
+    trimmed === '{}' ||
+    trimmed === '[]' ||
+    trimmed === '[object Object]' ||
+    trimmed === 'null' ||
+    trimmed === 'undefined'
+  ) {
+    return fallbackMessage;
+  }
+
+  // Intercept Supabase Auth email rate limits and SMTP errors
+  if (/over_email_send_rate_limit|rate\s*limit|too\s*many\s*requests/i.test(trimmed)) {
+    return fallbackMessage.includes('magic link')
+      ? 'Email rate limit exceeded. Please wait a few moments before requesting another magic link, or try "Forgot password" to reset your credentials.'
+      : 'Email rate limit exceeded. Please wait a few moments before requesting another link.';
+  }
+
+  if (/AuthRetryableFetchError|smtp|error sending recovery email|error sending magic link/i.test(trimmed)) {
+    return fallbackMessage.includes('magic link')
+      ? fallbackMessage
+      : 'Email delivery service error. Please try again shortly or contact your workspace administrator.';
+  }
+
   // Intercept Zod schema validation errors (either as a ZodError object or JSON string)
   if (typeof error === 'object' && error !== null && 'issues' in error && Array.isArray((error as { issues: unknown[] }).issues)) {
     const issues = (error as { issues: Array<{ path?: (string | number)[]; code?: string; message?: string; maximum?: number; minimum?: number }> }).issues;
